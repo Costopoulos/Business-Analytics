@@ -94,7 +94,7 @@ main<-function(){
   # Dataset after each file has been semi-preprocessed
   movies <- initialPreprocessing(DATASET_FILENAME)
   
-  cat("The number of rows in the movies object is", nrow(movies))
+  cat("The number of rows in the 'movies' object is", nrow(movies))
   
   # # Data exploration
   # #

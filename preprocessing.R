@@ -88,12 +88,14 @@ initialPreprocessing<-function(datasetFile){
   # Check how many NA values there are, per column
   naValuesPerColumn(dataset)
   
+  # Drop problematic columns
+  movies <- removeFields(dataset, PROBLEMATIC_FIELDS)
+  
   # Remove rows with NA fields
-  movies <- na.omit(dataset)
+  movies <- na.omit(movies)
   
   # Remove any duplicate movies
-  movies <- movies[!duplicated(movies[c("original_title","homepage",
-                                        "id","imdb_id")]),]
+  movies <- movies[!duplicated(movies[c("original_title","id","imdb_id")]),]
   
   return (movies)
 }
