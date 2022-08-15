@@ -38,9 +38,8 @@ UNUSED_FIELDS     <- c("adult","homepage","id","imdb_id","original_title",
                        "belongs_to_collection","original_language", "overview",
                        "poster_path","production_country","release_date",
                        "spoken_languages","status","tagline","title","video")
-ORDINAL_FIELDS    <- c("danceability", "energy", "loudness", "speechiness","acousticness",
-                       "instrumentalness", "liveness", "valence", "tempo", "duration_ms", "chorus_hit")
-DISCREET_FIELDS   <- c("time_signature", "sections")
+ORDINAL_FIELDS    <- c("popularity","runtime")
+DISCREET_FIELDS   <- c("budget", "revenue")
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
@@ -93,14 +92,14 @@ LIBRARIES<-c(
 main<-function(){
   # Dataset after each file has been semi-preprocessed
   movies <- initialPreprocessing(DATASET_FILENAME)
+
+  cat("The number of rows in the 'movies' object is", nrow(movies),"\n")
   
-  cat("The number of rows in the 'movies' object is", nrow(movies))
-  
-  # # Data exploration
-  # #
-  # # If plot(s) are not visible in the RStudio Plots tab, comment out everything in main() 
-  # # after plotMeanHitFlopValues(tracks) is called
-  # plotAllMeanGraphs(tracks, rangeBars = FALSE, yLine=0, indivPlots = FALSE) # Mean values across the years
+  # Data exploration
+  #
+  # If plot(s) are not visible in the RStudio Plots tab, comment out everything 
+  # in main() after plotMeanHitFlopValues(tracks) is called
+  plotAllMeanGraphs(movies, rangeBars = FALSE, yLine=0, indivPlots = FALSE) # Mean values across the years
   # plotHistograms(tracks, indivPlots = FALSE) # Distribution of field values for hits and flops
   # plotMeanHitFlopValues(tracks) # Table showing mean field values for hits and flops
   # 
@@ -141,7 +140,7 @@ pacman::p_load(char=LIBRARIES,install=TRUE,character.only=TRUE)
 
 # Import other functions
 source("preprocessing.R")
-# source("dataExplorationFunctions.R")
+source("dataPlot.R")
 # source("stratifiedKFold.R")
 # source("KNNFunctions.R")
 # source("forestFunctions.R")

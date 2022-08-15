@@ -31,18 +31,18 @@ manualTypes <- data.frame()
 # ************************************************
 # readDataset() :
 #
-# Read a CSV file and return it as a dataset
+# Read a CSV file and return it as a data frame
 #
 # INPUT: string - csvFilename - CSV filename
 #
-# OUTPUT : data frame - CSV file as a workable dataset
+# OUTPUT : data frame - df - CSV file as a workable data frame
 # ************************************************
 readDataset<-function(csvFilename){
   
-  dataset<-read.csv(file=csvFilename,encoding="UTF-8",stringsAsFactors = FALSE, na.strings=c("","NA"))
-  print(paste(csvFilename,"has been read. Number of records=",nrow(dataset)))
+  df<-read.csv(file=csvFilename,encoding="UTF-8",stringsAsFactors = FALSE, na.strings=c("","NA"))
+  print(paste(csvFilename,"has been read. Number of records=",nrow(df)))
   
-  return(dataset)
+  return(df)
 }
 
 # ************************************************
@@ -61,15 +61,33 @@ naValuesPerColumn<-function(df){
 #
 # Remove certain columns from the dataframe
 #
-# INPUT: data frame - dataset - original (raw) dataset
+# INPUT: data frame - df - data frame with data of the dataset
 # vector - fields - column names that should be dropped
 #
-# OUTPUT : data frame - dataset with fields removed
+# OUTPUT : data frame - df with fields removed
 # ************************************************
-removeFields<-function(dataset, fields) {
+removeFields<-function(df, fields) {
   drops <- fields
-  dataset <- dataset[ , !(names(dataset) %in% drops)]
-  return (dataset)
+  df <- df[ , !(names(df) %in% drops)]
+  return (df)
+}
+
+# ************************************************
+# convertTypes() :
+#
+# Convert types to the wanted ones
+#
+# INPUT: data frame - df - dataframe from the dataset
+#
+# OUTPUT : data frame - df with updated types
+# ************************************************
+convertTypes<-function(df) {
+  # Convert to double
+  df$budget <- as.numeric(df$budget)
+  df$popularity <- as.double(df$popularity)
+  # Convert all date values to YYYY format
+  df$release_date <- year(as.Date(df$release_date))
+  return(df)
 }
 
 # ************************************************
@@ -83,16 +101,19 @@ removeFields<-function(dataset, fields) {
 # ************************************************
 initialPreprocessing<-function(datasetFile){
   # Read the CSV file
-  dataset <- readDataset(datasetFile)
+  df <- readDataset(datasetFile)
   
   # Check how many NA values there are, per column
-  naValuesPerColumn(dataset)
+  naValuesPerColumn(df)
   
   # Drop problematic columns
-  movies <- removeFields(dataset, PROBLEMATIC_FIELDS)
+  movies <- removeFields(df, PROBLEMATIC_FIELDS)  
   
   # Remove rows with NA fields
   movies <- na.omit(movies)
+  
+  # Update datatypes
+  movies <- convertTypes(movies)
   
   # Remove any duplicate movies
   movies <- movies[!duplicated(movies[c("original_title","id","imdb_id")]),]
