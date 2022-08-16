@@ -101,7 +101,7 @@ main<-function(){
   # in main() after plotMeanHitFlopValues(tracks) is called
   plotAllMeanGraphs(movies, rangeBars = FALSE, yLine=0, indivPlots = FALSE) # Mean values across the years
   plotHistograms(movies, indivPlots = FALSE) # Distribution of field values for hits and flops
-  # plotMeanHitFlopValues(tracks) # Table showing mean field values for hits and flops
+  plotMeanHitFlopValues(movies) # Table showing mean field values for hits and flops
   # 
   # # Dataset after entire dataset has been preprocessed
   # datasets <- preprocessDataset(tracks)

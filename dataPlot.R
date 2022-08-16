@@ -22,6 +22,7 @@
 
 MEAN_WORTHY_FIELDS <- c("popularity","budget","revenue","runtime",
                         "vote_average")
+HIT_THRESHOLD <- 6.5
 
 # ************************************************
 # plotAllMeanGraphs() :
@@ -118,35 +119,27 @@ plotHistograms<-function(df, indivPlots = FALSE){
 # ************************************************
 # plotMeanHitFlopValues() :
 #
-# Plot a table showing the mean field values for hit and flop tracks
+# Plot a table showing the mean field values for hit and flop movies
 #
-# INPUT: data frame - dataset - original (raw) dataset filename
+# INPUT: data frame - df - movies' data frame
 # ************************************************
-plotMeanHitFlopValues<-function(dataset){
+plotMeanHitFlopValues<-function(df){
   
   # Remove fields that we do not need the mean values for
-  TO_DROP <- c("popularity", "release_date")
-  dataset <- dataset[ , !(names(dataset) %in% TO_DROP)]
+  TO_DROP <- c("release_date")
+  df <- df[, !(names(df) %in% TO_DROP)]
   
-  # Create a data frame for the mean hit values of all numeric columns in the dataset
-  hits <- as.data.frame(lapply(list(dataset), function(x)x[x$target=="1",]))
+  # Create a data frame for the mean hit values of all numeric columns in df
+  hits <- as.data.frame(lapply(list(df), function(x)x[x$vote_average>=HIT_THRESHOLD,]))
   mean_hits <- colMeans(hits[sapply(hits, is.numeric)])
   
-  # Create a data frame for the mean flop values of all numeric columns in the dataset
-  flops <- as.data.frame(lapply(list(dataset), function(x)x[x$target=="0",]))
+  # Create a data frame for the mean flop values of all numeric columns in df
+  flops <- as.data.frame(lapply(list(df), function(x)x[x$vote_average<HIT_THRESHOLD,]))
   mean_flops <- colMeans(flops[sapply(flops, is.numeric)])
   
-  combined_means <-  data.frame(cbind(mean_flops, mean_hits))
-  
+  combined_means <- data.frame(cbind(mean_flops, mean_hits))
   # Round all values to two decimal places
   combined_means <- round(combined_means, 2)
-  combined_means <- data.frame(t(combined_means))
-  
-  # Decrease the degree of accuracy for certain fields
-  combined_means$tempo = as.character(round_any(combined_means$tempo, 1))
-  combined_means$duration_ms = as.character(round_any(combined_means$duration_ms, 1000))
-  combined_means$chorus_hit = as.character(round_any(combined_means$chorus_hit, 1))
-  combined_means <- data.frame(t(combined_means))
   
   # Add labels to the columns
   names(combined_means)[1]<-"Mean flop value"
@@ -156,6 +149,5 @@ plotMeanHitFlopValues<-function(dataset){
   
   t<-formattable(combined_means, align=c("l",rep("r", NCOL(combined_means)-1)))
   print(t)
-  
 }
 
