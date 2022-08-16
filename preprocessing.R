@@ -126,75 +126,68 @@ initialPreprocessing<-function(datasetFile){
 #
 # Perform preprocessing on entire dataset
 #
-# INPUT: data frame - dataset - dataset of tracks
+# INPUT: data frame - df - data frame of movies
 #
 # OUTPUT : list - datasets - (preprocessed dataset of tracks, preprocessed and scaled dataset of tracks)
 # ************************************************
-preprocessDataset<-function(dataset){
-  # ************************************************
-  # Remove rows where loudness > 0
-  dataset = dataset[dataset$loudness <= 0,]
+preprocessing<-function(df){
   
-  # ************************************************
-  # Remove more fields from the dataset to prepare for modelling
-  dataset <- removeUnusedFields(dataset, UNUSED_FIELDS)
+  # Remove more fields from the df to prepare for modelling
+  df <- removeFields(df, UNUSED_FIELDS)
   
-  # ************************************************
   # Get field types
-  field_types <- determineFieldTypes(dataset)
+  field_types <- determineFieldTypes(df)
   
-  # ************************************************
   # Test if any ordinals are outliers and replace with mean values
   # Null hyposis is there are no outliers
   # We reject this if the p-value<significance (i.e. 0.05), confidence=95%
-  ordinals<-dataset[,which(field_types=="ORDINAL"),drop=FALSE]
+  ordinals<-df[,which(field_types=="ORDINAL"),drop=FALSE]
   ordinals_outliers_replaced<-NPREPROCESSING_outlier(ordinals=ordinals,confidence=OUTLIER_CONF)
-  dataset[,which(field_types=="ORDINAL")]<-ordinals_outliers_replaced
+  df[,which(field_types=="ORDINAL")]<-ordinals_outliers_replaced
   
-  # ************************************************
   # Normalisation - copy rescaled values to a new dataframe
   # z-scale the ordinals
-  zscaled<-apply(ordinals_outliers_replaced, MARGIN = 2,
-                 FUN = function(X) (scale(X,center=TRUE,
-                                          scale=TRUE)))
+  zscaled <- apply(ordinals_outliers_replaced, MARGIN = 2,
+                   FUN = function(X) (scale(X,center=TRUE,
+                                            scale=TRUE)))
   
   # Scale in this case to be [0.0,1.0]
   ordinalReadyforML<-Nrescaleentireframe(as.data.frame(zscaled))
-  dataset_scaled<-data.frame(dataset)
-  dataset_scaled[,which(field_types=="ORDINAL")]<-ordinalReadyforML
+  df_scaled<-data.frame(df)
+  df_scaled[,which(field_types=="ORDINAL")]<-ordinalReadyforML
   
-  return (list(tracks=dataset, tracks_normalised=dataset_scaled))
+  return (list(movies=df, movies_normalized=df_scaled))
 }
 
 # ************************************************
 # determineFieldTypes() :
 #
-# INPUT: data frame - combined preprocessed datasets of tracks
+# INPUT: data frame - df- semi-preprocessed movies
 #
 # OUTPUT : vector strings - with type per field [SYMBOLIC, DISCREET, ORDINAL}]
 # ************************************************
-determineFieldTypes<-function(dataset) {
+determineFieldTypes<-function(df) {
   symbolic_field_names = SYMBOLIC_FIELDS
   ordinal_field_names = ORDINAL_FIELDS
   
   field_types<-vector()
   # For every field
-  for(field in 1:(ncol(dataset))){
-    entry<-which(manualTypes$name==names(dataset)[field])
+  for(field in 1:(ncol(df))){
+    entry<-which(manualTypes$name==names(df)[field])
     if (length(entry)>0){
       field_types[field]<-manualTypes$type[entry]
       next
     }
     
     # Assign symbolics
-    if (names(dataset)[field] %in% symbolic_field_names){
+    if (names(df)[field] %in% symbolic_field_names){
       field_types[field]<-TYPE_SYMBOLIC
     }
     # Assign numerics
     else {
       field_types[field]<-TYPE_NUMERIC
       # Assign ordinals and discreets
-      if (names(dataset)[field] %in% ordinal_field_names){
+      if (names(df)[field] %in% ordinal_field_names){
         field_types[field]<-TYPE_ORDINAL
       }
       else {
@@ -204,19 +197,19 @@ determineFieldTypes<-function(dataset) {
   }
   
   # View the field types on the console
-  ordinal_fields<-names(dataset)[field_types=="ORDINAL"]
+  ordinal_fields<-names(df)[field_types=="ORDINAL"]
   print(paste("ORDINAL FIELDS=",length(ordinal_fields)))
   print(ordinal_fields)
   
-  discreet_fields<-names(dataset)[field_types=="DISCREET"]
+  discreet_fields<-names(df)[field_types=="DISCREET"]
   print(paste("DISCREET FIELDS=",length(discreet_fields)))
   print(discreet_fields)
   
-  symbolic_fields<-names(dataset)[field_types=="SYMBOLIC"]
+  symbolic_fields<-names(df)[field_types=="SYMBOLIC"]
   print(paste("SYMBOLIC FIELDS=",length(symbolic_fields)))
   print(symbolic_fields)
   
-  results<-data.frame(field=names(dataset),type=field_types)
+  results<-data.frame(field=names(df),type=field_types)
   print(formattable::formattable(results))
   return (field_types)
 }

@@ -34,12 +34,13 @@ PROBLEMATIC_FIELDS <- c("belongs_to_collection","homepage","tagline")
                       # these are fields with an absurdly large number of
                       # NA values, that will be dropped
 
-UNUSED_FIELDS     <- c("adult","homepage","id","imdb_id","original_title",
-                       "belongs_to_collection","original_language", "overview",
-                       "poster_path","production_country","release_date",
-                       "spoken_languages","status","tagline","title","video")
-ORDINAL_FIELDS    <- c("popularity","runtime")
-DISCREET_FIELDS   <- c("budget", "revenue")
+UNUSED_FIELDS     <- c("homepage","id","imdb_id","original_title",
+                       "belongs_to_collection","overview", "poster_path",
+                       "production_country","release_date", "spoken_languages",
+                       "status","tagline","title","video")
+SYMBOLIC_FIELDS   <- c("adult","genres","original_language","production_companies")
+ORDINAL_FIELDS    <- c("popularity","runtime","vote_average")
+DISCREET_FIELDS   <- c("budget","revenue","vote_count")
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
 TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
@@ -92,7 +93,6 @@ LIBRARIES<-c(
 main<-function(){
   # Dataset after each file has been semi-preprocessed
   movies <- initialPreprocessing(DATASET_FILENAME)
-
   cat("The number of rows in the 'movies' object is", nrow(movies),"\n")
   
   # Data exploration
@@ -102,14 +102,12 @@ main<-function(){
   plotAllMeanGraphs(movies, rangeBars = FALSE, yLine=0, indivPlots = FALSE) # Mean values across the years
   plotHistograms(movies, indivPlots = FALSE) # Distribution of field values for hits and flops
   plotMeanHitFlopValues(movies) # Table showing mean field values for hits and flops
-  # 
-  # # Dataset after entire dataset has been preprocessed
-  # datasets <- preprocessDataset(tracks)
-  # tracks <- datasets$tracks
-  # tracks_normalised <- datasets$tracks_normalised
-  # 
-  # print(paste("Number of total records=",nrow(tracks)))
-  # 
+  
+  # Dataset after entire dataset has been preprocessed
+  datasets <- preprocessing(movies)
+  movies <- datasets$movies
+  movies_normalised <- datasets$movies_normalised
+
   # # Prepare the dataset for use in stratified k-fold cross-validation
   # dataset <- stratifiedDataset(tracks)
   # dataset_normalised <- stratifiedDataset(tracks_normalised)
