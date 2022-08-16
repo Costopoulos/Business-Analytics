@@ -98,7 +98,7 @@ main<-function(){
   # Data exploration
   #
   # If plot(s) are not visible in the RStudio Plots tab, comment out everything 
-  # in main() after plotMeanHitFlopValues(tracks) is called
+  # in main() after plotMeanHitFlopValues(movies) is called
   plotAllMeanGraphs(movies, rangeBars = FALSE, yLine=0, indivPlots = FALSE) # Mean values across the years
   plotHistograms(movies, indivPlots = FALSE) # Distribution of field values for hits and flops
   plotMeanHitFlopValues(movies) # Table showing mean field values for hits and flops
@@ -106,11 +106,11 @@ main<-function(){
   # Dataset after entire dataset has been preprocessed
   datasets <- preprocessing(movies)
   movies <- datasets$movies
-  movies_normalised <- datasets$movies_normalised
+  movies_normalized <- datasets$movies_normalized
 
-  # # Prepare the dataset for use in stratified k-fold cross-validation
-  # dataset <- stratifiedDataset(tracks)
-  # dataset_normalised <- stratifiedDataset(tracks_normalised)
+  # Prepare the dataset for use in stratified k-fold cross-validation
+  dataset <- stratifiedDataset(movies)
+  dataset_normalized <- stratifiedDataset(movies_normalized)
   # 
   # # Run experiments on the models 
   # allResults <- runModels(dataset_normalised, normalised_dataset=dataset_normalised)
@@ -139,7 +139,7 @@ pacman::p_load(char=LIBRARIES,install=TRUE,character.only=TRUE)
 # Import other functions
 source("preprocessing.R")
 source("dataPlot.R")
-# source("stratifiedKFold.R")
+source("stratifiedKFold.R")
 # source("KNNFunctions.R")
 # source("forestFunctions.R")
 # source("helperFunctions.R")
