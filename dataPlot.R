@@ -28,16 +28,14 @@ MEAN_WORTHY_FIELDS <- c("popularity","budget","revenue","runtime",
 #
 # Plot line graphs to see how the mean values change over time
 #
-# INPUT: data frame - dataset - original (raw) dataset filename
+# INPUT: data frame - df - movies' data frame
 # ************************************************
-plotAllMeanGraphs<-function(dataset, rangeBars = FALSE, yLine = 0, indivPlots = FALSE){
-  # browser()
+plotAllMeanGraphs<-function(df, rangeBars = FALSE, yLine = 0, indivPlots = FALSE){
   p <- list()
   for(i in 1:length(MEAN_WORTHY_FIELDS)){
-    print("sela")
-    p[[i]] <- ggplot(data=dataset, aes_string(y=MEAN_WORTHY_FIELDS[i], x="release_date", group=1)) +
+    p[[i]] <- ggplot(data=df, aes_string(y=MEAN_WORTHY_FIELDS[i], x="release_date", group=1)) +
       ggtitle(paste("Mean values for", MEAN_WORTHY_FIELDS[i])) +
-      scale_x_continuous(name="Release date", ) +
+      scale_x_continuous(name="Release date") +
       theme(
         plot.title = element_text(color="black", size=11, face="bold"),
         panel.background = element_rect(fill="white", colour="blue", size=0.5, 
@@ -72,14 +70,14 @@ plotAllMeanGraphs<-function(dataset, rangeBars = FALSE, yLine = 0, indivPlots = 
 #
 # Plots an individual histogram for the input field and bin width
 #
-# INPUT: data frame - dataset - original (raw) dataset filename
+# INPUT: data frame - df - data frame of movies
 #
 # OUTPUT: ggplot histogram - histogram object which can be printed
 # ************************************************
-plotHistogram<-function(dataset, field, binWidth = 30, indivPlots = FALSE){
-  p<-ggplot(dataset, aes_string(x=field, fill="target", color="target")) +
+plotHistogram<-function(df, field, binWidth = 30, indivPlots = FALSE){
+  p<-ggplot(df, aes_string(x=field, fill="vote_average", color="vote_average")) +
     ggtitle(paste(field, "histogram")) +
-    geom_histogram(binwidth = binWidth,position="identity",aes_string(fill="target"),alpha=0.5)+
+    geom_histogram(binwidth = binWidth,position="identity",aes_string(fill="vote_average"),alpha=0.5)+
     scale_color_manual(values=c("#999999", "#E69F00"))+
     scale_fill_manual(values=c("#999999", "#E69F00"))+
     theme(
@@ -102,25 +100,19 @@ plotHistogram<-function(dataset, field, binWidth = 30, indivPlots = FALSE){
 #
 # Plot histograms to see the frequency distribution of each field in the dataset
 #
-# INPUT: data frame - dataset - original (raw) dataset filename
+# INPUT: data frame - df - movies' dataset
 # ************************************************
-plotHistograms<-function(dataset, indivPlots = FALSE){
+plotHistograms<-function(df, indivPlots = FALSE){
   
   # Plot histograms for each field
-  p1 <- plotHistogram(dataset=dataset, field="danceability", binWidth=0.025, indivPlots=indivPlots)
-  p2 <- plotHistogram(dataset=dataset, field="energy", binWidth=0.025, indivPlots=indivPlots)
-  p3 <- plotHistogram(dataset=dataset, field="loudness", binWidth=1.5, indivPlots=indivPlots)
-  p4 <- plotHistogram(dataset=dataset, field="speechiness", binWidth=0.025, indivPlots=indivPlots)
-  p5 <- plotHistogram(dataset=dataset, field="acousticness", binWidth=0.025, indivPlots=indivPlots)
-  p6 <- plotHistogram(dataset=dataset, field="instrumentalness", binWidth=0.025, indivPlots=indivPlots)
-  p7 <- plotHistogram(dataset=dataset, field="liveness", binWidth=0.025, indivPlots=indivPlots)
-  p8 <- plotHistogram(dataset=dataset, field="valence", binWidth=0.025, indivPlots=indivPlots)
-  p9 <- plotHistogram(dataset=dataset, field="tempo", binWidth=6, indivPlots=indivPlots)
-  p10 <- plotHistogram(dataset=dataset, field="duration_ms", binWidth=100000, indivPlots=indivPlots)
-  p11 <- plotHistogram(dataset=dataset, field="chorus_hit", binWidth=10, indivPlots=indivPlots)
-  p12 <- plotHistogram(dataset=dataset, field="popularity", binWidth=3, indivPlots=indivPlots)
+  p1 <- plotHistogram(df=df, field="vote_count", binWidth=1000, indivPlots=indivPlots)
+  p2 <- plotHistogram(df=df, field="vote_average", binWidth=1, indivPlots=indivPlots)
+  p3 <- plotHistogram(df=df, field="runtime", binWidth=100, indivPlots=indivPlots)
+  p4 <- plotHistogram(df=df, field="revenue", binWidth=100000000, indivPlots=indivPlots)
+  p5 <- plotHistogram(df=df, field="budget", binWidth=20000000, indivPlots=indivPlots)
+  p6 <- plotHistogram(df=df, field="popularity", binWidth=30, indivPlots=indivPlots)
   
-  grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12)
+  grid.arrange(p1, p2, p3, p4, p5, p6)
 }
 
 # ************************************************
