@@ -80,6 +80,43 @@ LIBRARIES<-c(
   "C50",
   "randomForest")
 
+# ************************************************
+# runModels() :
+#
+# Runs experiments on models with the dataset
+# Models used:
+# KNN, Random Forest
+#
+# INPUT: data frame - dataset - dataset of pre-processed tracks
+#        data frame - normalized_dataset - normalized dataset   
+# OUTPUT: data frame - allResults - combination of results from different models
+# ************************************************
+runModels<-function(dataset, normalized_dataset){
+  
+  # ************************************************
+  # Modelling: Random Forest
+  # ************************************************
+  
+  # RANDOM FOREST
+  RFmeasures<-runExperiment(dataset = dataset,FUN = randomForest)
+  # Create a data frame to compare results from different experiments
+  allResults<-data.frame(RandomForest=unlist(RFmeasures))
+  allResults<-realWorldMetrics(dataset, RFmeasures, allResults, "RF")
+  
+  # # Uncomment if we want to experiment with more DTs:
+  # # allResults <- runDTModels(dataset, allResults)
+  # 
+  # # ************************************************
+  # # Modelling: KNN
+  # # ************************************************
+  # 
+  # # Use stratified k-fold cross-validation with the KNN algorithm
+  # KNNmeasures<-runExperiment(dataset = normalised_dataset,FUN = knnModel)
+  # allResults<-cbind(allResults,data.frame(KNN=unlist(KNNmeasures)))
+  # allResults<-realWorldMetrics(dataset, KNNmeasures, allResults, "KNN")
+  
+  return (allResults)
+}
 
 # ************************************************
 # main() :
@@ -111,9 +148,9 @@ main<-function(){
   # Prepare the dataset for use in stratified k-fold cross-validation
   dataset <- stratifiedDataset(movies)
   dataset_normalized <- stratifiedDataset(movies_normalized)
-  # 
-  # # Run experiments on the models 
-  # allResults <- runModels(dataset_normalised, normalised_dataset=dataset_normalised)
+
+  # Run experiments on the models
+  allResults <- runModels(dataset_normalized, normalized_dataset=dataset_normalized)
   # 
   # # Perform evaluation
   # runEvaluation(allResults)
@@ -141,9 +178,9 @@ source("preprocessing.R")
 source("dataPlot.R")
 source("stratifiedKFold.R")
 # source("KNNFunctions.R")
-# source("forestFunctions.R")
-# source("helperFunctions.R")
-# source("evaluationFunctions.R")
+source("forest.R")
+source("helperMethods.R")
+source("evaluation.R")
 
 set.seed(123)
 
