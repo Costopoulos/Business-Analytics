@@ -90,6 +90,31 @@ convertTypes<-function(df) {
   return(df)
 }
 
+# *******************************************************
+# hitFlop() :
+#
+# Converts "vote_average" column to 0 or 1, if the 
+# value is equal or more than HIT_THRESHOLD
+#
+# INPUT: data frame - df - dataframe from the dataset
+#
+# OUTPUT : data frame - df with updated vote_average col
+# *******************************************************
+hitFlop<-function(df) {
+  for (i in 1:nrow(df))
+  {
+    if (df[i,"vote_average"] >= HIT_THRESHOLD)
+    {
+      df[i,"vote_average"]<-1
+    }
+    else
+    {
+      df[i,"vote_average"]<-0
+    }
+  }
+  return(df)
+}
+
 # ************************************************
 # initialPreprocessing() :
 #
@@ -114,6 +139,9 @@ initialPreprocessing<-function(datasetFile){
   
   # Update datatypes
   movies <- convertTypes(movies)
+  
+  # Movie is a hit if score is >= 6.5
+  movies <- hitFlop(movies)
   
   # Remove any duplicate movies
   movies <- movies[!duplicated(movies[c("original_title","id","imdb_id")]),]

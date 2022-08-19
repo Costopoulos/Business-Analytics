@@ -20,8 +20,7 @@
 # Global variables
 # ************************************************
 
-MEAN_WORTHY_FIELDS <- c("popularity","budget","revenue","runtime",
-                        "vote_average")
+MEAN_WORTHY_FIELDS <- c("popularity","budget","revenue","runtime")
 HIT_THRESHOLD <- 6.5
 
 # ************************************************
@@ -107,13 +106,12 @@ plotHistograms<-function(df, indivPlots = FALSE){
   
   # Plot histograms for each field
   p1 <- plotHistogram(df=df, field="vote_count", binWidth=1000, indivPlots=indivPlots)
-  p2 <- plotHistogram(df=df, field="vote_average", binWidth=1, indivPlots=indivPlots)
-  p3 <- plotHistogram(df=df, field="runtime", binWidth=100, indivPlots=indivPlots)
-  p4 <- plotHistogram(df=df, field="revenue", binWidth=100000000, indivPlots=indivPlots)
-  p5 <- plotHistogram(df=df, field="budget", binWidth=20000000, indivPlots=indivPlots)
-  p6 <- plotHistogram(df=df, field="popularity", binWidth=30, indivPlots=indivPlots)
+  p2 <- plotHistogram(df=df, field="runtime", binWidth=100, indivPlots=indivPlots)
+  p3 <- plotHistogram(df=df, field="revenue", binWidth=100000000, indivPlots=indivPlots)
+  p4 <- plotHistogram(df=df, field="budget", binWidth=20000000, indivPlots=indivPlots)
+  p5 <- plotHistogram(df=df, field="popularity", binWidth=30, indivPlots=indivPlots)
   
-  grid.arrange(p1, p2, p3, p4, p5, p6)
+  grid.arrange(p1, p2, p3, p4, p5)
 }
 
 # ************************************************
@@ -130,11 +128,11 @@ plotMeanHitFlopValues<-function(df){
   df <- df[, !(names(df) %in% TO_DROP)]
   
   # Create a data frame for the mean hit values of all numeric columns in df
-  hits <- as.data.frame(lapply(list(df), function(x)x[x$vote_average>=HIT_THRESHOLD,]))
+  hits <- as.data.frame(lapply(list(df), function(x)x[x$vote_average=="1",]))
   mean_hits <- colMeans(hits[sapply(hits, is.numeric)])
   
   # Create a data frame for the mean flop values of all numeric columns in df
-  flops <- as.data.frame(lapply(list(df), function(x)x[x$vote_average<HIT_THRESHOLD,]))
+  flops <- as.data.frame(lapply(list(df), function(x)x[x$vote_average=="0",]))
   mean_flops <- colMeans(flops[sapply(flops, is.numeric)])
   
   combined_means <- data.frame(cbind(mean_flops, mean_hits))
@@ -144,10 +142,12 @@ plotMeanHitFlopValues<-function(df){
   # Add labels to the columns
   names(combined_means)[1]<-"Mean flop value"
   names(combined_means)[2]<-"Mean hit value"
+  # Delete the vote_average row
+  combined_means<-combined_means[-5,]
   combined_means <- cbind("Field" = rownames(combined_means), as.data.frame(combined_means))
   rownames(combined_means) <- c()
   
-  t<-formattable(combined_means, align=c("l",rep("r", NCOL(combined_means)-1)))
+  t<-formattable(combined_means, align=c("l",rep("r", NCOL(combined_means))))
   print(t)
 }
 

@@ -36,10 +36,12 @@ PROBLEMATIC_FIELDS <- c("belongs_to_collection","homepage","tagline")
 
 UNUSED_FIELDS     <- c("homepage","id","imdb_id","original_title",
                        "belongs_to_collection","overview", "poster_path",
-                       "production_country","release_date", "spoken_languages",
+                       "production_countries","release_date", "spoken_languages",
                        "status","tagline","title","video")
-SYMBOLIC_FIELDS   <- c("adult","genres","original_language","production_companies")
-ORDINAL_FIELDS    <- c("popularity","runtime","vote_average")
+SYMBOLIC_FIELDS   <- c("adult","genres","original_language",
+                       "production_companies","vote_average")
+ORDINAL_FIELDS    <- c("popularity","runtime") # vote_average was ordinal, but
+                                               # I changed it to ease the modelling
 DISCREET_FIELDS   <- c("budget","revenue","vote_count")
 
 TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
@@ -104,14 +106,14 @@ runModels<-function(dataset, normalized_dataset){
   allResults<-realWorldMetrics(dataset, RFmeasures, allResults, "RF")
   
   # # Uncomment if we want to experiment with more DTs:
-  # # allResults <- runDTModels(dataset, allResults)
-  # 
+  # allResults <- runDTModels(dataset, allResults)
+
   # # ************************************************
   # # Modelling: KNN
   # # ************************************************
   # 
   # # Use stratified k-fold cross-validation with the KNN algorithm
-  # KNNmeasures<-runExperiment(dataset = normalised_dataset,FUN = knnModel)
+  # KNNmeasures<-runExperiment(dataset = normalized_dataset,FUN = knnModel)
   # allResults<-cbind(allResults,data.frame(KNN=unlist(KNNmeasures)))
   # allResults<-realWorldMetrics(dataset, KNNmeasures, allResults, "KNN")
   
@@ -151,9 +153,9 @@ main<-function(){
 
   # Run experiments on the models
   allResults <- runModels(dataset_normalized, normalized_dataset=dataset_normalized)
-  # 
-  # # Perform evaluation
-  # runEvaluation(allResults)
+
+  # Perform evaluation
+  runEvaluation(allResults)
 }
 
 # ************************************************
@@ -177,7 +179,7 @@ pacman::p_load(char=LIBRARIES,install=TRUE,character.only=TRUE)
 source("preprocessing.R")
 source("dataPlot.R")
 source("stratifiedKFold.R")
-# source("KNNFunctions.R")
+source("knn.R")
 source("forest.R")
 source("helperMethods.R")
 source("evaluation.R")

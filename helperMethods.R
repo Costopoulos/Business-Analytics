@@ -110,9 +110,9 @@ metricsToRealWorld<-function(dataset,measures,natural){
   
   #target is encoded as: 1 = Flop, 0 = Hit
   #Calculate class balance ratio, rm = flop / hit
-  ClassHit<-length(which(dataset[,positionClassOutput]>=FACTORED_HIT_THRESHOLD))
-  ClassFlop<-length(which(dataset[,positionClassOutput]<FACTORED_HIT_THRESHOLD))
-  browser()
+  ClassHit<-length(which(dataset[,positionClassOutput]==1))
+  ClassFlop<-length(which(dataset[,positionClassOutput]==0))
+  
   classBalance<-ClassFlop/ClassHit
   print(paste("Class balance, flop:hit=",round(classBalance,digits=2)))
   
