@@ -16,6 +16,34 @@
 # ************************************************
 
 # ************************************************
+# runEvaluation() :
+#
+# Outputs results of models and writes to a CSV
+#
+# INPUT: data frame - allResults - results of models
+# OUTPUT: NONE
+# ************************************************
+runEvaluation<-function(allResults){
+  # ************************************************
+  # Evaluation
+  # ************************************************
+  
+  # Combine all results into a dataframe
+  allResults<-data.frame(t(allResults))
+  
+  # Sort by highest MCC
+  allResults<-allResults[order(allResults$MCC,decreasing = TRUE),]
+  
+  # Output results to compare all classifiers
+  allResults[,1:4]<-sapply(allResults[,1:4], as.integer)
+  allResults$folds<-KFOLDS
+  print(formattable::formattable(allResults))
+  
+  # Write frame to a CSV files
+  write.csv(allResults,file=RESULTS_FILENAME)
+}
+
+# ************************************************
 #
 # [This function consists of modified code from Lab 4]
 #
