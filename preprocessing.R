@@ -1,7 +1,3 @@
-# To manually set a field type
-# This will store $name=field name, $type=field type
-manualTypes <- data.frame()
-
 # ************************************************
 # parseDataset() :
 #
@@ -131,33 +127,32 @@ initialPreprocessing<-function(config){
 #
 # Perform preprocessing on entire dataset
 #
-# INPUT: data frame - df - data frame of movies
+# INPUT: data frame - df     - data frame of movies
+#        list       - config - list of configurations
 #
 # OUTPUT : list - datasets - (preprocessed dataset of tracks, preprocessed and scaled dataset of tracks)
 # ************************************************
-preprocessing<-function(df){
+preprocessing<-function(df, config){
   
-  # Remove more fields from the df to prepare for modelling
-  df <- removeFields(df, UNUSED_FIELDS)
+  # Remove more fields from the df to prepare for training
+  df <- removeFields(df, config$UNUSED_FIELDS)
   
   # Get field types
-  field_types <- determineFieldTypes(df)
+  field_types <- determineFieldTypes(df, config)
   
-  # Test if any ordinals are outliers and replace with mean values
-  # Null hyposis is there are no outliers
-  # We reject this if the p-value<significance (i.e. 0.05), confidence=95%
+  # If ordinals are outliers, replace them with mean values
+  # If p-value < (1-confidence), reject it
   ordinals<-df[,which(field_types=="ORDINAL"),drop=FALSE]
-  ordinals_outliers_replaced<-NPREPROCESSING_outlier(ordinals=ordinals,confidence=OUTLIER_CONF)
+  ordinals_outliers_replaced<-determineOutliers(ordinals=ordinals,confidence=config$OUTLIER_CONF)
   df[,which(field_types=="ORDINAL")]<-ordinals_outliers_replaced
   
-  # Normalisation - copy rescaled values to a new dataframe
-  # z-scale the ordinals
+  # Normalisation and z-scaling of ordinals
   zscaled <- apply(ordinals_outliers_replaced, MARGIN = 2,
                    FUN = function(X) (scale(X,center=TRUE,
                                             scale=TRUE)))
   
-  # Scale in this case to be [0.0,1.0]
-  ordinalReadyforML<-Nrescaleentireframe(as.data.frame(zscaled))
+  # Scale to be [0.0,1.0]
+  ordinalReadyforML<-rescaleDataframe(as.data.frame(zscaled))
   df_scaled<-data.frame(df)
   df_scaled[,which(field_types=="ORDINAL")]<-ordinalReadyforML
   
@@ -167,36 +162,34 @@ preprocessing<-function(df){
 # ************************************************
 # determineFieldTypes() :
 #
-# INPUT: data frame - df- semi-preprocessed movies
-#
-# OUTPUT : vector strings - with type per field [SYMBOLIC, DISCREET, ORDINAL}]
+# INPUT: data frame - df     - semi-preprocessed movies
+#        list       - config - list of configurations
+# OUTPUT : vector strings with type
 # ************************************************
-determineFieldTypes<-function(df) {
-  symbolic_field_names = SYMBOLIC_FIELDS
-  ordinal_field_names = ORDINAL_FIELDS
+determineFieldTypes<-function(df, config) {
   
   field_types<-vector()
-  # For every field
+  # For all columns
   for(field in 1:(ncol(df))){
-    entry<-which(manualTypes$name==names(df)[field])
+    entry<-which(data.frame()$name==names(df)[field])
     if (length(entry)>0){
-      field_types[field]<-manualTypes$type[entry]
+      field_types[field]<-data.frame()$type[entry]
       next
     }
     
     # Assign symbolics
-    if (names(df)[field] %in% symbolic_field_names){
-      field_types[field]<-TYPE_SYMBOLIC
+    if (names(df)[field] %in% config$SYMBOLIC_FIELDS){
+      field_types[field]<-config$TYPE_SYMBOLIC
     }
-    # Assign numerics
+    # Assign nums
     else {
-      field_types[field]<-TYPE_NUMERIC
+      field_types[field]<-config$TYPE_NUMERIC
       # Assign ordinals and discreets
-      if (names(df)[field] %in% ordinal_field_names){
-        field_types[field]<-TYPE_ORDINAL
+      if (names(df)[field] %in% config$ORDINAL_FIELDS){
+        field_types[field]<-config$TYPE_ORDINAL
       }
       else {
-        field_types[field]<-TYPE_DISCREET
+        field_types[field]<-config$TYPE_DISCREET
       }
     }
   }
@@ -221,15 +214,14 @@ determineFieldTypes<-function(df) {
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
-# NPREPROCESSING_outlier() :
+# determineOutliers() :
 #
 # Determine if a value of a record is an outlier for each field
 #
 # INPUT:   data frame - ordinals   - numeric fields only
-#          double     - confidence - Confidence above which is determined an outlier [0,1]
-#                                  - Set to negative Confidence if NOT remove outliers
+#          double     - confidence - Confidence above which is determined an outlier
 #
 # OUTPUT : data frame - ordinals with any outlier values replaced with the median of the field
 # ************************************************
@@ -237,24 +229,24 @@ determineFieldTypes<-function(df) {
 # Uses   library(outliers)
 # https://cran.r-project.org/web/packages/outliers/outliers.pdf
 
-NPREPROCESSING_outlier<-function(ordinals,confidence){
+determineOutliers<-function(ordinals,confidence){
   
-  #For every ordinal field in our dataset
+  # For every ordinal field in our dataset
   for(field in 1:(ncol(ordinals))){
     
     sorted<-unique(sort(ordinals[,field],decreasing=TRUE))
     outliers<-which(outliers::scores(sorted,type="chisq",prob=abs(confidence)))
     NplotOutliers(sorted,outliers,colnames(ordinals)[field])
     
-    #If found records with outlier values
+    # If found records with outlier values
     if ((length(outliers>0))){
       
-      #070819NRT If confidence is positive then replace values with their means, otherwise do nothing
+      # If confidence is positive then replace values with their means, otherwise do nothing
       if (confidence>0){
         outliersGone<-rm.outlier(ordinals[,field],fill=TRUE)
         sorted<-unique(sort(outliersGone,decreasing=TRUE))
-        #NplotOutliers(sorted,vector(),colnames(ordinals)[field])
-        ordinals[,field]<-outliersGone #Put in the values with the outliers replaced by means
+        NplotOutliers(sorted,vector(),colnames(ordinals)[field])
+        ordinals[,field]<-outliersGone # Put in the values with the outliers replaced by means
         print(paste("Outlier field=",names(ordinals)[field],"Records=",length(outliers),"Replaced with MEAN"))
       } else {
         print(paste("Outlier field=",names(ordinals)[field],"Records=",length(outliers)))
@@ -267,15 +259,15 @@ NPREPROCESSING_outlier<-function(ordinals,confidence){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # NplotOutliers() :
 #
 # Scatter plot of field values and colours outliers in red
 #
 # INPUT: Vector - sorted    -  points to plot as literal values
-#        Vector - outliers  - list of above points that are considered outliers
-#        String - fieldName - name of field to plot
+#        Vector - outliers  -  list of above points that are considered outliers
+#        String - fieldName -  name of field to plot
 #
 # OUTPUT : None
 # ************************************************
@@ -293,7 +285,7 @@ NplotOutliers<-function(sorted,outliers,fieldName){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # Nrescale() :
 #
@@ -305,7 +297,6 @@ NplotOutliers<-function(sorted,outliers,fieldName){
 # OUTPUT : vector - scaled values to [0.0,1.0]
 # ************************************************
 Nrescale<-function(input){
-  
   minv<-min(input)
   maxv<-max(input)
   return((input-minv)/(maxv-minv))
@@ -313,18 +304,17 @@ Nrescale<-function(input){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
-# Nrescaleentireframe() :
+# rescaleDataframe() :
 #
-# Rescle the entire dataframe to [0.0,1.0]
+# Rescale dataframe to [0.0,1.0]
 #
-# INPUT:   data frame - dataset - numeric data frame
+# INPUT:   data frame - df - numeric data frame
 #
 # OUTPUT : data frame - scaled numeric data frame
 # ************************************************
-Nrescaleentireframe<-function(dataset){
-  
-  scaled<-sapply(as.data.frame(dataset),Nrescale)
+rescaleDataframe<-function(df){
+  scaled<-sapply(as.data.frame(df),Nrescale)
   return(scaled)
 }

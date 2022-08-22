@@ -153,7 +153,7 @@ main<-function(){
   visualizeData(movies, config)
   
   # Dataset after entire dataset has been preprocessed
-  datasets <- preprocessing(movies)
+  datasets <- preprocessing(movies, config)
   movies <- datasets$movies
   movies_normalized <- datasets$movies_normalized
 
