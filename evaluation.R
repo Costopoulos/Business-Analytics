@@ -1,32 +1,13 @@
 # ************************************************
-#  PRACTICAL BUSINESS ANALYTICS 2021
-#  COM3018
-#
-# Marilia Sinopli
-# University of Surrey
-# GUILDFORD
-# Surrey GU2 7XH
-#
-# 22 NOVEMBER 2021
-#
-# UPDATE
-# 1.00      09/11/2021    Initial Version   (Emilia Lukose)
-# 1.01      23/11/2021    Replace lab NcalcMeasures with own function    (Dominic Adams)
-# 1.02      23/11/2021    Added generic getModelClassifications    (Emilia Lukose)
-# ************************************************
-
-# ************************************************
 # runEvaluation() :
 #
 # Outputs results of models and writes to a CSV
 #
 # INPUT: data frame - allResults - results of models
+#        list       - config     - list of configurations
 # OUTPUT: NONE
 # ************************************************
-runEvaluation<-function(allResults){
-  # ************************************************
-  # Evaluation
-  # ************************************************
+runEvaluation<-function(allResults, config){
   
   # Combine all results into a dataframe
   allResults<-data.frame(t(allResults))
@@ -36,53 +17,54 @@ runEvaluation<-function(allResults){
   
   # Output results to compare all classifiers
   allResults[,1:4]<-sapply(allResults[,1:4], as.integer)
-  allResults$folds<-KFOLDS
+  allResults$folds<-config$KFOLDS
   print(formattable::formattable(allResults))
   
   # Write frame to a CSV files
-  write.csv(allResults,file=RESULTS_FILENAME)
+  write.csv(allResults,file=config$EVALUATION_RESULTS)
 }
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
-# getModelClassifications() :
+# testModel() :
 #
-# Put in test dataset and get out class predictions of a model
+# Test dataset
 # Determine the threshold, plot the results and calculate metrics
 #
 # INPUT   :   object         - myMode       - model (tree or KNN)
 #         :   Data Frame     - testDataset  - dataset to evaluate
 #         :   string         - title        - string to plot as the chart title
-#         :   int            - classLabel   - lable given to the positive (TRUE) class
+#         :   list           - config       - list of configurations
+#         :   int            - classLabel   - label given to the positive (TRUE) class
 #         :   boolean        - plot         - TRUE to output results/charts
 #
 # OUTPUT  :   List       - Named evaluation measures
 #
 # ************************************************
-getModelClassifications<-function(myModel,
+testModel<-function(myModel,
                                   testDataset,
                                   title,
+                                  config,
                                   classLabel=1,
                                   plot=TRUE){
   
-  positionClassOutput=which(names(testDataset)==OUTPUT_FIELD)
+  positionClassOutput=which(names(testDataset)==config$OUTPUT_FIELD)
   
-  # Test data: dataframe with with just input fields
+  # Test data is the dataframe of all columns except vote_average
   test_inputs<-testDataset[-positionClassOutput]
   
-  # Generate class membership probabilities
-  # Column 1 is for class 0 (flop) and column 2 is for class 1 (hit)
+  # Predict
   testPredictedClassProbs<-predict(myModel, test_inputs, type="prob")
   
   # Get the column index with the class label
   classIndex<-which(as.numeric(colnames(testPredictedClassProbs))==classLabel)
   
-  # Get the probabilities for classifying the hits
+  # Success probabilities
   test_predictedProbs<-testPredictedClassProbs[,classIndex]
   
-  # Test data: vector with just the expected output class
+  # Test expected is the dataframe with only vote_average column
   test_expected<-testDataset[,positionClassOutput]
   
   measures<-NdetermineThreshold(test_expected=test_expected,
@@ -91,14 +73,14 @@ getModelClassifications<-function(myModel,
                                 title=title)
   
   if (plot==TRUE)
-    NprintMeasures(results=measures,title=title)
+    NprintMeasures(measures,title)
   
   return(measures)
-} #endof getModelClassifications()
+}
 
 # ************************************************
 #
-# getModelMeasures() :
+# calculateModelMeasures() :
 #
 # Calculate measures to evaluate a model given values from confusion matrix
 #
@@ -110,15 +92,15 @@ getModelClassifications<-function(myModel,
 #                   TN        - double - number of true negatives
 #                   FN        - double - number of false negatives
 #                   accuracy  - double - accuracy of model
-#                   phit      - double - precision for "hit" / 1 classification
-#                   pflop     - double - precision for "flop" / 0 classification
+#                   phit      - double - precision for "success" / 1 classification
+#                   pflop     - double - precision for "failure" / 0 classification
 #                   FPR       - double - false positive rate
 #                   TPR       - double - true positive rate
 #                   TNR       - double - true negative rate
 #                   MCC       - double - Matthew's Correlation Coefficient
 #
 # ************************************************
-getModelMeasures<-function(TP,FN,FP,TN){
+calculateModelMeasures<-function(TP,FN,FP,TN){
   
   # Calculate model performance
   measures <- list()
@@ -130,8 +112,8 @@ getModelMeasures<-function(TP,FN,FP,TN){
   
   measures$accuracy <- 100 * (TP + TN) / (TP + FP + FN + TN)
   
-  measures$phit <- 100 * TP / (TP + FP)
-  measures$pflop <- 100 * TN / (TN + FN)
+  measures$p_success <- 100 * TP / (TP + FP)
+  measures$p_fail    <- 100 * TN / (TN + FN)
   
   measures$FNR <- 100 * FN / (TN + FN)
   measures$FPR <- 100 * FP / (TN + FP)
@@ -145,7 +127,7 @@ getModelMeasures<-function(TP,FN,FP,TN){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # NcalcConfusion() :
 #
@@ -153,20 +135,15 @@ getModelMeasures<-function(TP,FN,FP,TN){
 # INPUT: vector - expectedClass  - {0,1}, Expected outcome from each row (labels)
 #        vector - predictedClass - {0,1}, Predicted outcome from each row (labels)
 #
-# OUTPUT: A list with the  entries from NcalcMeasures()
+# OUTPUT: A list with the entries from NcalcMeasures()
 #
-# 070819NRT convert values to doubles to avoid integers overflowing
-# Updated to the following definition of the confusion matrix
-#
-# A hit is indicated when $target=1 and flop when $target=0
-
-#                    ACTUAL
-#               ------------------
-# PREDICTED     HIT=1   |  FLOP=0
-#               ------------------
-#     HIT=1      TP     |    FP
-#               ==================
-#     FLOP=0     FN     |    TN
+#                         ACTUAL
+#               -------------------------
+# PREDICTED     SUCCESS=1   |  FAILURE=0
+#               -------------------------
+#     SUCCESS=1      TP     |    FP
+#               =========================
+#     FAILURE=0      FN     |    TN
 #
 #
 # ************************************************
@@ -174,16 +151,16 @@ NcalcConfusion<-function(expectedClass,predictedClass){
   
   confusion<-table(factor(predictedClass,levels=0:1),factor(expectedClass,levels=0:1))
   
-  # This "converts" the above into our preferred format
+  # Convert to wanted type
   
   TP<-as.double(confusion[2,2])
   FN<-as.double(confusion[1,2])
   FP<-as.double(confusion[2,1])
   TN<-as.double(confusion[1,1])
   
-  return(getModelMeasures(TP,FN,FP,TN))
+  return(calculateModelMeasures(TP,FN,FP,TN))
   
-} #endof NcalcConfusion()
+}
 
 # ************************************************
 #
