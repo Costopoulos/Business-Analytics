@@ -65,6 +65,10 @@ setConfig<-function() {
                                               # this threshold is considered a 
                                               # success
   
+  MEAN_WORTHY_FIELDS <- c("popularity","budget","revenue","runtime") # Fields to
+                                                                     # get the mean
+                                                                     # values from
+  
   # Initialize empty list to keep key-value pairs
   config <- list()
   
@@ -86,6 +90,7 @@ setConfig<-function() {
   config[['NODE_DEPTH']]           <- NODE_DEPTH
   config[['TREE_NUMBER']]          <- TREE_NUMBER
   config[['BLOCKBUSTER_THRESHOLD']]<- BLOCKBUSTER_THRESHOLD
+  config[['MEAN_WORTHY_FIELDS']]   <- MEAN_WORTHY_FIELDS
   
   return(config)
 }
@@ -135,7 +140,6 @@ runModels<-function(dataset, normalized_dataset){
 #
 # INPUT: None
 # OUTPUT :None
-
 # ************************************************
 main<-function(){
   # Get config
@@ -145,13 +149,8 @@ main<-function(){
   movies <- initialPreprocessing(config)
   cat("The number of rows in the 'movies' object is now", nrow(movies),"\n")
   
-  # Data exploration
-  #
-  # If plot(s) are not visible in the RStudio Plots tab, comment out everything 
-  # in main() after plotMeanHitFlopValues(movies) is called
-  plotAllMeanGraphs(movies, rangeBars = FALSE, yLine=0, indivPlots = FALSE) # Mean values across the years
-  plotHistograms(movies, indivPlots = FALSE) # Distribution of field values for hits and flops
-  plotMeanHitFlopValues(movies) # Table showing mean field values for hits and flops
+  # Visualize data
+  visualizeData(movies, config)
   
   # Dataset after entire dataset has been preprocessed
   datasets <- preprocessing(movies)
