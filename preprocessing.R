@@ -1,46 +1,20 @@
-# ************************************************
-#  PRATICAL BUSINESS ANALYTICS 2021
-#  COM3018
-#
-# Marilia Sinopli
-# University of Surrey
-# GUILDFORD
-# Surrey GU2 7XH
-#
-# 11 NOVEMBER 2021
-#
-# UPDATE
-# 1.00      11/11/2021    Initial Version   (Dominic Adams)
-# 1.01      13/11/2021    Add readDataset()   (Dominic Adams)
-# 1.02      16/11/2021    Finish handleReleaseDateField()   (Dominic Adams)
-# 1.03      16/11/2021    Add removeRowsWithNA()   (Emilia Lukose)
-# 1.04      16/11/2021    Add removeUnusedFields()   (Emilia Lukose)
-# 1.05      21/11/2021    Add preprocessDatasetFiles(), preprocessDataset() (Emilia Lukose)
-# 1.06      23/11/2021    Added ordinal outlier detection, ordinal scaling  (Emilia Lukose)
-# 1.07      23/11/2021    Removed duplicate tracks based on uri and track name + artist  (Emilia Lukose)
-# ************************************************
-
-# ************************************************
-# Global variables
-# ************************************************
-
 # To manually set a field type
 # This will store $name=field name, $type=field type
 manualTypes <- data.frame()
 
 # ************************************************
-# readDataset() :
+# parseDataset() :
 #
 # Read a CSV file and return it as a data frame
 #
 # INPUT: string - csvFilename - CSV filename
 #
-# OUTPUT : data frame - df - CSV file as a workable data frame
+# OUTPUT : data frame - df - data frame
 # ************************************************
-readDataset<-function(csvFilename){
+parseDataset<-function(csvFilename){
   
   df<-read.csv(file=csvFilename,encoding="UTF-8",stringsAsFactors = FALSE, na.strings=c("","NA"))
-  print(paste(csvFilename,"has been read. Number of records=",nrow(df)))
+  print(paste(csvFilename,"'s number of rows are",nrow(df)))
   
   return(df)
 }
@@ -91,19 +65,21 @@ convertTypes<-function(df) {
 }
 
 # *******************************************************
-# hitFlop() :
+# classifyMoviePerformance() :
 #
 # Converts "vote_average" column to 0 or 1, if the 
-# value is equal or more than HIT_THRESHOLD
+# value is equal or more than blockbuster_threshold
 #
-# INPUT: data frame - df - dataframe from the dataset
+# INPUT: data frame - df                     - dataframe from the dataset
+#        num        - blockbuster_threshold  - value above which the movie is 
+#                                              considered a success
 #
 # OUTPUT : data frame - df with updated vote_average col
 # *******************************************************
-hitFlop<-function(df) {
+classifyMoviePerformance<-function(df, blockbuster_threshold) {
   for (i in 1:nrow(df))
   {
-    if (df[i,"vote_average"] >= HIT_THRESHOLD)
+    if (df[i,"vote_average"] >= blockbuster_threshold)
     {
       df[i,"vote_average"]<-1
     }
@@ -120,19 +96,20 @@ hitFlop<-function(df) {
 #
 # Perform semi-preprocessing on csv files
 #
-# INPUT: file - datasetFile - csv filename
+# INPUT: config - list of configurations
 #
 # OUTPUT : data frame - movies - initially processed movies
 # ************************************************
-initialPreprocessing<-function(datasetFile){
+initialPreprocessing<-function(config){
   # Read the CSV file
-  df <- readDataset(datasetFile)
+  df <- parseDataset(config$DATASET_FILENAME)
   
   # Check how many NA values there are, per column
   naValuesPerColumn(df)
   
   # Drop problematic columns
-  movies <- removeFields(df, PROBLEMATIC_FIELDS)  
+  movies <- removeFields(df, config$PROBLEMATIC_FIELDS)
+  cat("Removing problematic columns\n")
   
   # Remove rows with NA fields
   movies <- na.omit(movies)
@@ -140,8 +117,8 @@ initialPreprocessing<-function(datasetFile){
   # Update datatypes
   movies <- convertTypes(movies)
   
-  # Movie is a hit if score is >= 6.5
-  movies <- hitFlop(movies)
+  # Movie is a blockbuster if score is >= 6.5
+  movies <- classifyMoviePerformance(movies, config$BLOCKBUSTER_THRESHOLD)
   
   # Remove any duplicate movies
   movies <- movies[!duplicated(movies[c("original_title","id","imdb_id")]),]

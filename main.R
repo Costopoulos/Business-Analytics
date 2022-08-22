@@ -1,66 +1,10 @@
 # ************************************************
-#  PRATICAL BUSINESS ANALYTICS 2021
+#  PRACTICAL BUSINESS ANALYTICS 2021
 #  COM3018
-#
-# Marilia Sinopli
-# University of Surrey
-# GUILDFORD
-# Surrey GU2 7XH
-#
-# 09 NOVEMBER 2021
-#
-# UPDATE
-# 1.00      09/11/2021    Initial Version   (Emilia Lukose)
-# 1.01      11/11/2021    Add main() and create dataset object    (Dominic Adams)
-# 1.02      16/11/2021    Read in all data files and use for data exploration/pre-processing   (Dominic Adams)
-# 1.03      21/11/2021    Separate semi-pre-processing on each file and full dataset pre-processing  (Emilia Lukose)
-# 1.04      22/11/2021    Added preliminary KNN Model (Uliks Sekiraqa)
-# 1.05      22/11/2021    Added decision tree models (Emilia Lukose)
-# 1.06      22/11/2021    Added evaluation of different models (Emilia Lukose)
-# 1.07      25/11/2021    Added runDTModels for experiments on decision tree models (Emilia Lukose)
-# 1.08      25/11/2021    Separated function for real world metrics comparison (Emilia Lukose)
 # ************************************************
 
-# ************************************************
-# Global variables
-# ************************************************
 
-DATASET_FILENAME <- "movies_metadata.csv"
-
-OUTPUT_FIELD <- "vote_average" # Field name of the output class to predict
-
-# Indicates the type of each field
-PROBLEMATIC_FIELDS <- c("belongs_to_collection","homepage","tagline") 
-                      # these are fields with an absurdly large number of
-                      # NA values, that will be dropped
-
-UNUSED_FIELDS     <- c("homepage","id","imdb_id","original_title",
-                       "belongs_to_collection","overview", "poster_path",
-                       "production_countries","release_date", "spoken_languages",
-                       "status","tagline","title","video")
-SYMBOLIC_FIELDS   <- c("adult","genres","original_language",
-                       "production_companies","vote_average")
-ORDINAL_FIELDS    <- c("popularity","runtime") # vote_average was ordinal, but
-                                               # I changed it to ease the modelling
-DISCREET_FIELDS   <- c("budget","revenue","vote_count")
-
-TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
-TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
-TYPE_SYMBOLIC     <- "SYMBOLIC"           # field is a string
-TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
-
-OUTLIER_CONF      <- 0.95                 # Confidence p-value for outlier detection
-# Set to negative means "analyse but do not replace outliers"
-
-# These are the supervised model constants
-
-PDF_FILENAME      <- "tree.pdf"           # Name of PDF with graphical tree diagram
-RESULTS_FILENAME  <- "results.csv"        # Name of the CSV results file
-NODE_LEVEL        <- 1                    # The number is the node level of the tree to print
-BOOST             <- 20                   # Number of boosting iterations. 1=single model
-FOREST_SIZE       <- 200                  # Number of trees in the forest
-
-# Libraries that will be used in the project
+# Import libraries
 LIBRARIES<-c(
   "ggplot2",
   "lubridate",
@@ -81,6 +25,70 @@ LIBRARIES<-c(
   "partykit",
   "C50",
   "randomForest")
+
+
+setConfig<-function() {
+  DATASET_FILENAME <- "movies_metadata.csv"
+  
+  OUTPUT_FIELD <- "vote_average" # Field name of the output class to predict
+  
+  # Indicates the type of each field
+  PROBLEMATIC_FIELDS <- c("belongs_to_collection","homepage","tagline") 
+  # these are fields with an absurdly large number of
+  # NA values, that will be dropped
+  
+  UNUSED_FIELDS     <- c("homepage","id","imdb_id","original_title",
+                         "belongs_to_collection","overview", "poster_path",
+                         "production_countries","release_date", "spoken_languages",
+                         "status","tagline","title","video")
+  SYMBOLIC_FIELDS   <- c("adult","genres","original_language",
+                         "production_companies","vote_average")
+  ORDINAL_FIELDS    <- c("popularity","runtime") # vote_average was ordinal, but
+                                                 # I changed it to ease the modelling
+  DISCREET_FIELDS   <- c("budget","revenue","vote_count")
+  
+  TYPE_DISCREET     <- "DISCREET"           # field is discreet (numeric)
+  TYPE_ORDINAL      <- "ORDINAL"            # field is continuous numeric
+  TYPE_SYMBOLIC     <- "SYMBOLIC"           # field is a string
+  TYPE_NUMERIC      <- "NUMERIC"            # field is initially a numeric
+  
+  OUTLIER_CONF      <- 0.95                 # Confidence p-value for detecting outliers
+                                            # Set to negative means "analyse but 
+                                            # do not replace outliers"
+  
+  TREE_FILENAME         <- "diagram.pdf"      # Graphical Tree
+  EVALUATION_RESULTS    <- "evaluations.csv"  # CSV results file
+  NODE_DEPTH            <- 1                  # Νode level of the tree to print
+  TREE_NUMBER           <- 200                # Trees in the forest
+  
+  BLOCKBUSTER_THRESHOLD <- 6.5                # Any movie with a vote_average above
+                                              # this threshold is considered a 
+                                              # success
+  
+  # Initialize empty list to keep key-value pairs
+  config <- list()
+  
+  # Pairs
+  config[['DATASET_FILENAME']]     <- DATASET_FILENAME
+  config[['OUTPUT_FIELD']]         <- OUTPUT_FIELD
+  config[['PROBLEMATIC_FIELDS']]   <- PROBLEMATIC_FIELDS
+  config[['UNUSED_FIELDS']]        <- UNUSED_FIELDS
+  config[['SYMBOLIC_FIELDS']]      <- SYMBOLIC_FIELDS
+  config[['ORDINAL_FIELDS']]       <- ORDINAL_FIELDS
+  config[['DISCREET_FIELDS']]      <- DISCREET_FIELDS
+  config[['TYPE_ORDINAL']]         <- TYPE_ORDINAL
+  config[['TYPE_DISCREET']]        <- TYPE_DISCREET
+  config[['TYPE_SYMBOLIC']]        <- TYPE_SYMBOLIC
+  config[['TYPE_NUMERIC']]         <- TYPE_NUMERIC
+  config[['OUTLIER_CONF']]         <- OUTLIER_CONF
+  config[['TREE_FILENAME']]        <- TREE_FILENAME
+  config[['EVALUATION_RESULTS']]   <- EVALUATION_RESULTS
+  config[['NODE_DEPTH']]           <- NODE_DEPTH
+  config[['TREE_NUMBER']]          <- TREE_NUMBER
+  config[['BLOCKBUSTER_THRESHOLD']]<- BLOCKBUSTER_THRESHOLD
+  
+  return(config)
+}
 
 # ************************************************
 # runModels() :
@@ -130,9 +138,12 @@ runModels<-function(dataset, normalized_dataset){
 
 # ************************************************
 main<-function(){
+  # Get config
+  config <- setConfig()
+  
   # Dataset after each file has been semi-preprocessed
-  movies <- initialPreprocessing(DATASET_FILENAME)
-  cat("The number of rows in the 'movies' object is", nrow(movies),"\n")
+  movies <- initialPreprocessing(config)
+  cat("The number of rows in the 'movies' object is now", nrow(movies),"\n")
   
   # Data exploration
   #
@@ -158,24 +169,20 @@ main<-function(){
   runEvaluation(allResults)
 }
 
-# ************************************************
-# Utility functions from the labs
-# ************************************************
-
-gc() # Garbage collection to automatically release memory
+gc() # Garbage collection
 
 # Clear plots and other graphics
 if(!is.null(dev.list())) dev.off()
 graphics.off()
 
-# Clears the console area
+# Clear console
 cat("\f")
 
 # Load libraries
 library(pacman)
 pacman::p_load(char=LIBRARIES,install=TRUE,character.only=TRUE)
 
-# Import other functions
+# Source all other code
 source("preprocessing.R")
 source("dataPlot.R")
 source("stratifiedKFold.R")
@@ -184,7 +191,7 @@ source("forest.R")
 source("helperMethods.R")
 source("evaluation.R")
 
-set.seed(123)
+set.seed(42)
 
 main()
 
