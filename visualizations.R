@@ -76,7 +76,7 @@ visualizeMeanGraphs<-function(df, config, rangeBars = FALSE, yLine = 0, indivPlo
 # ************************************************
 plotHistogram<-function(df, field, binWidth = 30, indivPlots = FALSE){
   p<-ggplot(df, aes_string(x=field, fill="vote_average", color="vote_average")) +
-    ggtitle(paste(field, "histogram")) + #(xlim(0,NA)) +
+    ggtitle(paste(field, "histogram")) +
     geom_histogram(binwidth = binWidth,position="identity",aes_string(fill="vote_average"),alpha=0.5)+
     scale_color_manual(values=c("#999999", "#E69F00"))+
     scale_fill_manual(values=c("#999999", "#E69F00"))+
@@ -111,6 +111,7 @@ visualizeHistograms<-function(df, indivPlots = FALSE){
   p3 <- plotHistogram(df=df, field="revenue", binWidth=100000000, indivPlots=indivPlots)
   p4 <- plotHistogram(df=df, field="budget", binWidth=20000000, indivPlots=indivPlots)
   p5 <- plotHistogram(df=df, field="popularity", binWidth=30, indivPlots=indivPlots)
+  p6 <- plotHistogram(df=df, field="release_date", binWidth=10, indivPlots=indivPlots)
   
   # # Plot histograms for each field
   # p1 <- plotHistogram(df=df, field="vote_count")
@@ -119,7 +120,7 @@ visualizeHistograms<-function(df, indivPlots = FALSE){
   # p4 <- plotHistogram(df=df, field="budget")
   # p5 <- plotHistogram(df=df, field="popularity")
   
-  grid.arrange(p1, p2, p3, p4, p5)
+  grid.arrange(p1, p2, p3, p4, p5, p6)
 }
 
 # ************************************************
