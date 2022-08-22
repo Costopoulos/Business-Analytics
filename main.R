@@ -183,7 +183,7 @@ pacman::p_load(char=LIBRARIES,install=TRUE,character.only=TRUE)
 
 # Source all other code
 source("preprocessing.R")
-source("dataPlot.R")
+source("visualizations.R")
 source("stratifiedKFold.R")
 source("knn.R")
 source("forest.R")
