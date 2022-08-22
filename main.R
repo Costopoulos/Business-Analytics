@@ -69,6 +69,8 @@ setConfig<-function() {
                                                                      # get the mean
                                                                      # values from
   
+  KFOLDS <- 5 # Number of folds to use in stratified k-fold cross-validation
+  
   # Initialize empty list to keep key-value pairs
   config <- list()
   
@@ -91,6 +93,7 @@ setConfig<-function() {
   config[['TREE_NUMBER']]          <- TREE_NUMBER
   config[['BLOCKBUSTER_THRESHOLD']]<- BLOCKBUSTER_THRESHOLD
   config[['MEAN_WORTHY_FIELDS']]   <- MEAN_WORTHY_FIELDS
+  config[['KFOLDS']]               <- KFOLDS
   
   return(config)
 }
@@ -157,9 +160,9 @@ main<-function(){
   movies <- df$movies
   movies_normalized <- df$movies_normalized
 
-  # Prepare the dataset for use in stratified k-fold cross-validation
-  dataset <- stratifiedDataset(movies)
-  dataset_normalized <- stratifiedDataset(movies_normalized)
+  # Prepare df for use in stratified k-fold cross-validation
+  dataset <- stratifiedDataframe(movies, config)
+  dataset_normalized <- stratifiedDataframe(movies_normalized, config)
 
   # Run experiments on the models
   allResults <- runModels(dataset_normalized, normalized_dataset=dataset_normalized)
