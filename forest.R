@@ -1,6 +1,6 @@
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # simpleDT() :
 #
@@ -10,6 +10,7 @@
 # INPUT   :
 #             Data Frame     - train       - original train dataset
 #             Data Frame     - test        - original test dataset
+#             list           - config      - list of configurations
 #             boolean        - plot        - TRUE = plot charts
 #
 # OUTPUT  :
@@ -18,12 +19,8 @@
 # ************************************************
 simpleDT<-function(train,test,config,plot=TRUE){
   
-  # In original dataset, $target is the classification label
-  # We need to convert this to give the minority class a value of 0
-  # this just makes it easier to define the confusioon matrix!
-  # for the UCI-G this is a class of {0,1} being {flop, hit}
-  train<-NConvertClass(train)
-  test<-NConvertClass(test)
+  train<-NConvertClass(train,config)
+  test<-NConvertClass(test,config)
   
   positionClassOutput<-which(names(train)==config$OUTPUT_FIELD)
   
@@ -31,17 +28,18 @@ simpleDT<-function(train,test,config,plot=TRUE){
                   y=factor(train[,positionClassOutput]),
                   rules=TRUE,
                   trials=1)
-  
+
   measures<-testModel(myModel = tree,
-                                    testDataset = test,
-                                    title="Original Dataset. DT C5.0")
+                      testDataset = test,
+                      title="Original Dataset. DT C5.0",
+                      config=config)
   
   return(measures)
-} #endof simpleDT()
+}
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # fullDT() :
 #
@@ -50,6 +48,7 @@ simpleDT<-function(train,test,config,plot=TRUE){
 # INPUT   :
 #             Data Frame     - train       - train dataset
 #             Data Frame     - test        - test dataset
+#             list           - config      - list of configurations
 #             int            - boost       - number of trees to boost
 #             boolean        - plot        - TRUE = plot charts
 #
@@ -107,18 +106,16 @@ fullDT<-function(train,test,config,boost=1,plot=TRUE){
     barplot(t(importance),las=2,
             border = 0, cex.names =0.7,
             main=myTitle)
+
     
-    # ************************************************
-    # We can visualise the tree
-    
-    #Function to output the tree as rules to a file
+    # Function to output the tree as rules to a file
     dftreerules<-NDT5RuleOutput(tree)
     print(formattable::formattable(dftreerules))
     
     # ************************************************
     # Creates the same  C5.0 decision tree & output as a tree structure, plot it
     # The "partykit" library requires the variables (wrongly) to be global
-    print("Plot decision tree to file called tree.pdf")
+    print("Plot decision tree to file called diagram.pdf")
     
     Global_train_inputs<<-train_inputs
     Global_train_expected<<-train_expected
@@ -132,7 +129,7 @@ fullDT<-function(train,test,config,boost=1,plot=TRUE){
     graphtree<-C50:::as.party.C5.0(tree)
     
     # The plot is large - so print to a big PDF file
-    pdf(TREE_FILENAME, width=100, height=50, paper="special", onefile=F)
+    pdf(config$TREE_FILENAME, width=100, height=50, paper="special", onefile=F)
     
     # The number is the node level of the tree to print
     plot(graphtree[config$NODE_DEPTH])
@@ -145,7 +142,7 @@ fullDT<-function(train,test,config,boost=1,plot=TRUE){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # randomForest() :
 #

@@ -24,7 +24,8 @@ LIBRARIES<-c(
   "PerformanceAnalytics",
   "partykit",
   "C50",
-  "randomForest")
+  "randomForest",
+  "jsonlite")
 
 
 setConfig<-function() {
@@ -70,6 +71,7 @@ setConfig<-function() {
                                                                      # values from
   
   KFOLDS <- 5 # Number of folds to use in stratified k-fold cross-validation
+  BOOST  <- 20 # Number of boosting iterations
   
   # Initialize empty list to keep key-value pairs
   config <- list()
@@ -94,6 +96,7 @@ setConfig<-function() {
   config[['BLOCKBUSTER_THRESHOLD']]<- BLOCKBUSTER_THRESHOLD
   config[['MEAN_WORTHY_FIELDS']]   <- MEAN_WORTHY_FIELDS
   config[['KFOLDS']]               <- KFOLDS
+  config[['BOOST']]                <- BOOST
   
   return(config)
 }
@@ -136,6 +139,34 @@ trainModel<-function(df,config,FUN, ...){
   return(as.list(colMeans(allResults)))
 }
 
+# ************************************************
+# runDynamicTrees() :
+#
+# Trains Simple, C5 and Boosted DT on the dataframe
+#
+# INPUT: data frame - df         - dataset of pre-processed movies
+#        list       - config     - list of configurations
+#        data frame - allResults - results from random forest algorithm
+#
+# OUTPUT: data frame - allResults - combination of results from different models
+runDynamicTrees<-function(df, config, allResults){
+  
+  # SIMPLE DECISION TREE
+  measures<-trainModel(df = df,config=config,FUN = simpleDT)
+  # Create a data frame to compare results from different experiments
+  allResults<-cbind(allResults,data.frame(DT_raw=unlist(measures)))
+
+  # C5 DECISION TREE
+  measures<-trainModel(df = df,config=config,FUN = fullDT)
+  allResults<-cbind(allResults,data.frame(DT_preprocess=unlist(measures)))
+  
+  # BOOSTED TREE
+  # The algorithm allows for "boosting"
+  # Many trees are built using all the input fields and these then "vote"
+  measures<-trainModel(df = df,config=config,FUN = fullDT,boost=config$BOOST)
+  allResults<-cbind(allResults,data.frame(DT_boost=unlist(measures)))
+  return (allResults)
+}
 
 # ************************************************
 # runModels() :
@@ -156,8 +187,8 @@ runModels<-function(df, normalized_df, config){
   results<-data.frame(RandomForest=unlist(RFmeasures))
   results<-realWorldMetrics(df, RFmeasures, results, config, "RF")
   
-  # # Uncomment if we want to experiment with more DTs:
-  # results <- runDTModels(df, results, config)
+  # Uncomment if we want to experiment with more trees:
+  # results <- runDynamicTrees(df, config, results)
 
   # # ************************************************
   # # Modelling: KNN

@@ -1,34 +1,32 @@
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # NConvertClass() :
 #
-# In original dataset, $target is the classification label
-# We need to convert this to give the minority class a value of 0
-# this just makes it easiert to define the confusion matrix!
-# for the UCI-G this is a class of {0,1} being {flop, hit}
+# Converts vote_average to give minority class a value of 0. Simplifies the
+# calculation of the confusion matrix
 #
 # INPUT   :
-#             Data Frame        - dataset
-#
+#             Data Frame        - df
+#             list              - config         - list of configurations
 # OUTPUT  :
 #             Data Frame        - dataset
 #
 # ************************************************
-NConvertClass<-function(dataset){
-  positionClassOutput<-which(names(dataset)==OUTPUT_FIELD)
-  classes<-sort(table(dataset[,positionClassOutput])) #smallest class will be first
+NConvertClass<-function(df, config){
+  positionClassOutput<-which(names(df)==config$OUTPUT_FIELD)
+  classes<-sort(table(df[,positionClassOutput])) #smallest class will be first
   minority<-names(classes[1])
-  indexToStatus2<-which(dataset[positionClassOutput]==minority)
-  dataset[positionClassOutput][indexToStatus2,]<-0
-  dataset[positionClassOutput][-indexToStatus2,]<-1
-  return(dataset)
+  indexToStatus2<-which(df[positionClassOutput]==minority)
+  df[positionClassOutput][indexToStatus2,]<-0
+  df[positionClassOutput][-indexToStatus2,]<-1
+  return(df)
 }
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # metricsToRealWorld() :
 #
@@ -60,11 +58,6 @@ metricsToRealWorld<-function(df,measures,config,real){
   
   # sg = rm / rn
   sg<-classBalance/real
-  
-  # Adjust the results to reflect the real df
-  # P (being successes) = TP+TN
-  # So we will increase P * sg, which will then give the estimated real class balance
-  # in the results
   
   TP<-round(measures$TP*sg,digits=0)
   FN<-round(measures$FN*sg,digits=0)
