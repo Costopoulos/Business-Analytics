@@ -99,41 +99,76 @@ setConfig<-function() {
 }
 
 # ************************************************
+#
+# [Based on Lab 4's code]
+#
+# trainModel() :
+#
+#
+# INPUT   :   data frame         - df             - dataframe of preprocessed movies
+#             list               - config         - list of configurations
+#             object function    - FUN            - name of function
+#             ...                - optional       - parameters are passed on
+#
+# OUTPUT  :   data frame         - dataset        - dataset with foldID added
+#
+# ************************************************
+trainModel<-function(df,config,FUN, ...){
+  
+  allResults<-data.frame()
+  
+  for (k in 1:config$KFOLDS){
+    
+    splitData<-stratifiedSplit(df=df,fold=k)
+    
+    measures<-FUN(train=splitData$train,
+                  test=splitData$test,
+                  config=config,
+                  plot=(k==config$KFOLDS),...)
+    
+    allResults<-rbind(allResults,data.frame(measures))
+  }
+  
+  # Return list of means
+  getMeans<-colMeans(allResults)
+  getMeans[1:4]<-as.integer(getMeans[1:4])  # TP, FN, TN, FP are rounded to ints
+  
+  return(as.list(colMeans(allResults)))
+}
+
+
+# ************************************************
 # runModels() :
 #
-# Runs experiments on models with the dataset
-# Models used:
-# KNN, Random Forest
+# Trains Random Forest and KNN on the dataframe
 #
-# INPUT: data frame - dataset - dataset of pre-processed tracks
-#        data frame - normalized_dataset - normalized dataset   
-# OUTPUT: data frame - allResults - combination of results from different models
+# INPUT: data frame - df                 - data frame of pre-processed movies
+#        data frame - normalized_df      - normalized data frame
+#        list       - config             - list of configurations
+#
+# OUTPUT: data frame - results - combination of results from different models
 # ************************************************
-runModels<-function(dataset, normalized_dataset){
-  
-  # ************************************************
-  # Modelling: Random Forest
-  # ************************************************
+runModels<-function(df, normalized_df, config){
   
   # RANDOM FOREST
-  RFmeasures<-runExperiment(dataset = dataset,FUN = randomForest)
+  RFmeasures<-trainModel(df, config, FUN = randomForest)
   # Create a data frame to compare results from different experiments
-  allResults<-data.frame(RandomForest=unlist(RFmeasures))
-  allResults<-realWorldMetrics(dataset, RFmeasures, allResults, "RF")
+  results<-data.frame(RandomForest=unlist(RFmeasures))
+  results<-realWorldMetrics(df, RFmeasures, results, config, "RF")
   
   # # Uncomment if we want to experiment with more DTs:
-  # allResults <- runDTModels(dataset, allResults)
+  # results <- runDTModels(df, results, config)
 
   # # ************************************************
   # # Modelling: KNN
   # # ************************************************
   # 
   # # Use stratified k-fold cross-validation with the KNN algorithm
-  # KNNmeasures<-runExperiment(dataset = normalized_dataset,FUN = knnModel)
-  # allResults<-cbind(allResults,data.frame(KNN=unlist(KNNmeasures)))
-  # allResults<-realWorldMetrics(dataset, KNNmeasures, allResults, "KNN")
+  # KNNmeasures<-trainModel(df = normalized_df,FUN = knnModel)
+  # results<-cbind(results,data.frame(KNN=unlist(KNNmeasures)))
+  # results<-realWorldMetrics(df, KNNmeasures, results, "KNN")
   
-  return (allResults)
+  return (results)
 }
 
 # ************************************************
@@ -161,14 +196,14 @@ main<-function(){
   movies_normalized <- df$movies_normalized
 
   # Prepare df for use in stratified k-fold cross-validation
-  dataset <- stratifiedDataframe(movies, config)
-  dataset_normalized <- stratifiedDataframe(movies_normalized, config)
+  movies <- stratifiedDataframe(movies, config)
+  movies_normalized <- stratifiedDataframe(movies_normalized, config)
 
   # Run experiments on the models
-  allResults <- runModels(dataset_normalized, normalized_dataset=dataset_normalized)
+  allResults <- runModels(movies_normalized, movies_normalized, config)
 
   # Perform evaluation
-  runEvaluation(allResults)
+  runEvaluation(allResults, config)
 }
 
 gc() # Garbage collection

@@ -77,15 +77,15 @@ stratifiedDataframe<-function(df, config){
 #
 # Generate the TRAIN and TEST dataset based on the current fold
 #
-# INPUT   :   data frame         - dataset        - dataset
+# INPUT   :   data frame         - df        - dataframe of preprocessed movies
 #
 # OUTPUT  :   list               - train & test datasets
 # ************************************************
 
-stratifiedSplit<-function(dataset,fold){
+stratifiedSplit<-function(df,fold){
   
-  test<-subset(dataset, subset= foldId==fold, select=-foldId)
-  train<-subset(dataset, subset= foldId!=fold,select=-foldId)
+  test<-subset(df, subset= foldId==fold, select=-foldId)
+  train<-subset(df, subset= foldId!=fold,select=-foldId)
   
   return(list(
     train=train,

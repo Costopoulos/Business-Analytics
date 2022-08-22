@@ -1,19 +1,4 @@
 # ************************************************
-#  PRACTICAL BUSINESS ANALYTICS 2021
-#  COM3018
-#
-# Marilia Sinopli
-# University of Surrey
-# GUILDFORD
-# Surrey GU2 7XH
-#
-# 22 NOVEMBER 2021
-#
-# UPDATE
-# 1.00      09/11/2021    Initial Version   (Emilia Lukose)
-# ************************************************
-
-# ************************************************
 #
 # [This function consists of modified code from Lab 4]
 #
@@ -31,7 +16,7 @@
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-simpleDT<-function(train,test,plot=TRUE){
+simpleDT<-function(train,test,config,plot=TRUE){
   
   # In original dataset, $target is the classification label
   # We need to convert this to give the minority class a value of 0
@@ -40,14 +25,14 @@ simpleDT<-function(train,test,plot=TRUE){
   train<-NConvertClass(train)
   test<-NConvertClass(test)
   
-  positionClassOutput<-which(names(train)==OUTPUT_FIELD)
+  positionClassOutput<-which(names(train)==config$OUTPUT_FIELD)
   
   tree<-C50::C5.0(x=train[-positionClassOutput],
                   y=factor(train[,positionClassOutput]),
                   rules=TRUE,
                   trials=1)
   
-  measures<-getModelClassifications(myModel = tree,
+  measures<-testModel(myModel = tree,
                                     testDataset = test,
                                     title="Original Dataset. DT C5.0")
   
@@ -72,9 +57,9 @@ simpleDT<-function(train,test,plot=TRUE){
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-fullDT<-function(train,test,boost=1,plot=TRUE){
+fullDT<-function(train,test,config,boost=1,plot=TRUE){
   
-  positionClassOutput<-which(names(train)==OUTPUT_FIELD)
+  positionClassOutput<-which(names(train)==config$OUTPUT_FIELD)
   
   # train data: dataframe with the input fields
   train_inputs<-train[-positionClassOutput]
@@ -100,8 +85,9 @@ fullDT<-function(train,test,boost=1,plot=TRUE){
   
   # Use the created decision tree with the test dataset
   # to determine best classification threshold & calculate metrics
-  measures<-getModelClassifications(myModel = tree,
+  measures<-testModel(myModel = tree,
                                     testDataset = test,
+                                    config = config,
                                     title=myTitle,
                                     plot=plot)
   
@@ -146,16 +132,16 @@ fullDT<-function(train,test,boost=1,plot=TRUE){
     graphtree<-C50:::as.party.C5.0(tree)
     
     # The plot is large - so print to a big PDF file
-    pdf(PDF_FILENAME, width=100, height=50, paper="special", onefile=F)
+    pdf(TREE_FILENAME, width=100, height=50, paper="special", onefile=F)
     
     # The number is the node level of the tree to print
-    plot(graphtree[NODE_LEVEL])
+    plot(graphtree[config$NODE_DEPTH])
     
     #This closes the PDF file
     dev.off()
   }
   return(measures)
-} #endof fullDT()
+}
 
 # ************************************************
 #
@@ -168,18 +154,19 @@ fullDT<-function(train,test,boost=1,plot=TRUE){
 # INPUT   :
 #         :   Data Frame     - train       - train dataset
 #             Data Frame     - test        - test dataset
+#             list           - config      - list of configurations
 #             boolean        - plot        - TRUE = output charts/results
 #
 # OUTPUT  :
 #         :   Data Frame     - measures  - performance metrics
 #
 # ************************************************
-randomForest<-function(train,test,plot=TRUE){
+randomForest<-function(train,test,config,plot=TRUE){
   
-  myTitle<-(paste("Preprocessed Dataset. Random Forest=",FOREST_SIZE,"trees"))
+  myTitle<-(paste("Random Forest =",config$TREE_NUMBER,"trees"))
   print(myTitle)
   
-  positionClassOutput<-which(names(train)==OUTPUT_FIELD)
+  positionClassOutput<-which(names(train)==config$OUTPUT_FIELD)
   
   # train data: dataframe with the input fields
   train_inputs<-train[-positionClassOutput]
@@ -189,17 +176,17 @@ randomForest<-function(train,test,plot=TRUE){
   
   rf<-randomForest::randomForest(train_inputs,
                                  factor(train_expected),
-                                 ntree=FOREST_SIZE ,
+                                 ntree=config$TREE_NUMBER ,
                                  importance=TRUE,
                                  mtry=sqrt(ncol(train_inputs)))
   
   
-  # ************************************************
   # Use the created decision tree with the test dataset
-  measures<-getModelClassifications(myModel = rf,
-                                    testDataset = test,
-                                    title=myTitle,
-                                    plot=plot)
+  measures<-testModel(myModel = rf,
+                      testDataset = test,
+                      config=config,
+                      title=myTitle,
+                      plot=plot)
   
   if (plot==TRUE){
     # Get importance of the input fields
@@ -216,4 +203,4 @@ randomForest<-function(train,test,plot=TRUE){
   }
   
   return(measures)
-} #endof randomForest()
+}

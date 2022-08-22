@@ -1,63 +1,4 @@
 # ************************************************
-#  PRACTICAL BUSINESS ANALYTICS 2021
-#  COM3018
-#
-# Marilia Sinopli
-# University of Surrey
-# GUILDFORD
-# Surrey GU2 7XH
-#
-# 22 NOVEMBER 2021
-#
-# UPDATE
-# 1.00      09/11/2021    Initial Version   (Emilia Lukose)
-# ************************************************
-
-# ************************************************
-# Global variables
-# ************************************************
-
-# The output field of the model is measured from 0-1, thus we shift the hit 
-# threshold
-FACTORED_HIT_THRESHOLD = HIT_THRESHOLD/10
-
-# ************************************************
-#
-# [This function consists of modified code from Lab 4]
-#
-# runExperiment() :
-#
-#
-# INPUT   :   data frame         - dataset        - dataset
-#             object function    - FUN            - name of function
-#             ...                - optional        - parameters are passed on
-#
-# OUTPUT  :   data frame         - dataset        - dataset with foldID added
-#
-# ************************************************
-runExperiment<-function(dataset,FUN, ...){
-  
-  allResults<-data.frame()
-  
-  for (k in 1:KFOLDS){
-    
-    splitData<-stratifiedSplit(dataset=dataset,fold=k)
-    
-    measures<-FUN(train=splitData$train,
-                  test=splitData$test,
-                  plot=(k==KFOLDS),...)
-    
-    allResults<-rbind(allResults,data.frame(measures))
-  } #endof for()
-  
-  # Return the means from all the experiments back as a list
-  getMeans<-colMeans(allResults)
-  getMeans[1:4]<-as.integer(getMeans[1:4])  # TP, FN, TN, FP are rounded to ints
-  
-  return(as.list(colMeans(allResults)))
-} #endof runExperiment()
-
-# ************************************************
 #
 # [This function consists of modified code from Lab 4]
 #
@@ -92,39 +33,37 @@ NConvertClass<-function(dataset){
 # metricsToRealWorld() :
 #
 # Adjust metrics to an assumed real-world sample
-# Here we assume that the dataset has been sampled and needs to be 'corrected'
-# We have already calculated for the training dataset
-# classBalance = model(flop)/model(hit)
+# classBalanceRatio = model(fail)/model(success)
 #
-# INPUT   :   Data Frame     - dataset   - original dataset
+# INPUT   :   Data Frame     - df        - original data frame
 #         :   Data Frame     - measures  - performance metrics
-#         :   double         - natural   - flop rate in natural population
+#             list           - config    - list of configurations
+#         :   double         - real      - failure rate in real world scenario
 #
 # OUTPUT  :
 #         :   Data Frame     - measures  - adjusted performance metrics
 #
 # ************************************************
-metricsToRealWorld<-function(dataset,measures,natural){
+metricsToRealWorld<-function(df,measures,config,real){
   
-  positionClassOutput=which(names(dataset)==OUTPUT_FIELD)
+  positionClassOutput=which(names(df)==config$OUTPUT_FIELD)
   
-  #target is encoded as: 1 = Flop, 0 = Hit
-  #Calculate class balance ratio, rm = flop / hit
-  ClassHit<-length(which(dataset[,positionClassOutput]==1))
-  ClassFlop<-length(which(dataset[,positionClassOutput]==0))
+  # Class Balance
+  success<-length(which(df[,positionClassOutput]==1))
+  failure<-length(which(df[,positionClassOutput]==0))
   
-  classBalance<-ClassFlop/ClassHit
-  print(paste("Class balance, flop:hit=",round(classBalance,digits=2)))
+  classBalance<-failure/success
+  print(paste("Class balance, failure/success=",round(classBalance,digits=2)))
   
   # This equates to a flop rate of...
-  print(paste("Flop rate in dataset=",round((ClassFlop/nrow(dataset))*100,digits=2),"%",sep=""))
+  print(paste("Failure rate in dataset=",round((failure/nrow(df))*100,digits=2),"%",sep=""))
   
   # sg = rm / rn
-  sg<-classBalance/natural
+  sg<-classBalance/real
   
-  # Adjust the results to reflect the natural dataset
-  # P (being hits) = TP+TN
-  # So we will increase P * sg, which will then give the estimated natural class balance
+  # Adjust the results to reflect the real df
+  # P (being successes) = TP+TN
+  # So we will increase P * sg, which will then give the estimated real class balance
   # in the results
   
   TP<-round(measures$TP*sg,digits=0)
@@ -132,38 +71,38 @@ metricsToRealWorld<-function(dataset,measures,natural){
   TN=measures$TN
   FP=measures$FP
   
-  adjustedMeasures<-getModelMeasures(TP=TP, FN=FN, FP=FP, TN=TN)
+  adjustedMeasures<-calculateModelMeasures(TP=TP, FN=FN, FP=FP, TN=TN)
   
   NprintMeasures(results=adjustedMeasures,
-                 title=paste("Real world adjust",natural))
-  
-  # You'd expect (FP+TN)/(TP+FN) to be close to naturalClassBalance
+                 title=paste("Real world adjust",real))
   
   adjustedMeasures$threshold=measures$threshold
   
   return(adjustedMeasures)
-} #endof metricsToRealWorld()
+}
 
 # ************************************************
 # realWorldMetrics() :
 #
 # Adds results by taking real world metrics into account
 #
-# INPUT: data frame - dataset - dataset of pre-processed tracks
-#        list       - measures - measures from a model
-#        data frame - allResults - results from a model
-#        character  - modelName - name of the model
+# INPUT: data frame - df          - dataset of pre-processed tracks
+#        list       - measures    - measures from a model
+#        data frame - allResults  - results from a model
+#        list       - config      - list of configurations
+#        character  - modelName   - name of the model
+#
 # OUTPUT: data frame - allResults - combination of results from different models, incl realWorldMetrics
 # ************************************************
-realWorldMetrics<-function(dataset, measures, allResults, modelName){
+realWorldMetrics<-function(df, measures, allResults, config, modelName){
   # REAL WORLD METRICS
-  # Assume that the dataset has been sampled and needs to be 'corrected'
-  # 50% of songs are flops and 50% are hits, but this is highly unlikely
-  # Assume the natural population has a 70% chance of having a flop
-  naturalClassBalance<-70/100
-  measures<-metricsToRealWorld(dataset=dataset,
-                               measures = measures,
-                               natural=naturalClassBalance)
+  # Half of the movies are failures and half are successful, but in a real world
+  # scenario it would be 70% fails and 30% successes
+  realWorldClassBalance<-70/100
+  measures<-metricsToRealWorld(df=df,
+                               measures=measures,
+                               config=config,
+                               real=realWorldClassBalance)
   
   # Name results modelName_adjust
   tempResults <- data.frame(placeholder_name=unlist(measures))
