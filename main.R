@@ -72,6 +72,7 @@ setConfig<-function() {
   
   KFOLDS <- 5 # Number of folds to use in stratified k-fold cross-validation
   BOOST  <- 20 # Number of boosting iterations
+  K_VALUE <- 7
   
   # Initialize empty list to keep key-value pairs
   config <- list()
@@ -97,6 +98,7 @@ setConfig<-function() {
   config[['MEAN_WORTHY_FIELDS']]   <- MEAN_WORTHY_FIELDS
   config[['KFOLDS']]               <- KFOLDS
   config[['BOOST']]                <- BOOST
+  config[['K_VALUE']]              <- K_VALUE
   
   return(config)
 }
@@ -190,14 +192,11 @@ runModels<-function(df, normalized_df, config){
   # Uncomment if we want to experiment with more trees:
   # results <- runDynamicTrees(df, config, results)
 
-  # # ************************************************
-  # # Modelling: KNN
-  # # ************************************************
-  # 
-  # # Use stratified k-fold cross-validation with the KNN algorithm
-  # KNNmeasures<-trainModel(df = normalized_df,FUN = knnModel)
+  # KNN
+  # Use stratified k-fold cross-validation with the KNN algorithm
+  # KNNmeasures<-trainModel(df = normalized_df,config=config,FUN = knnModel)
   # results<-cbind(results,data.frame(KNN=unlist(KNNmeasures)))
-  # results<-realWorldMetrics(df, KNNmeasures, results, "KNN")
+  # results<-realWorldMetrics(df, KNNmeasures, results, config, "KNN")
   
   return (results)
 }
@@ -231,7 +230,7 @@ main<-function(){
   movies_normalized <- stratifiedDataframe(movies_normalized, config)
 
   # Run experiments on the models
-  allResults <- runModels(movies_normalized, movies_normalized, config)
+  allResults <- runModels(movies, movies_normalized, config)
 
   # Perform evaluation
   runEvaluation(allResults, config)

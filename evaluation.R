@@ -44,11 +44,11 @@ runEvaluation<-function(allResults, config){
 #
 # ************************************************
 testModel<-function(myModel,
-                                  testDataset,
-                                  title,
-                                  config,
-                                  classLabel=1,
-                                  plot=TRUE){
+                    testDataset,
+                    title,
+                    config,
+                    classLabel=1,
+                    plot=TRUE){
   
   positionClassOutput=which(names(testDataset)==config$OUTPUT_FIELD)
   
@@ -92,8 +92,8 @@ testModel<-function(myModel,
 #                   TN        - double - number of true negatives
 #                   FN        - double - number of false negatives
 #                   accuracy  - double - accuracy of model
-#                   phit      - double - precision for "success" / 1 classification
-#                   pflop     - double - precision for "failure" / 0 classification
+#                   p_success - double - precision for "success" / 1 classification
+#                   p_fail    - double - precision for "failure" / 0 classification
 #                   FPR       - double - false positive rate
 #                   TPR       - double - true positive rate
 #                   TNR       - double - true negative rate
@@ -164,7 +164,7 @@ NcalcConfusion<-function(expectedClass,predictedClass){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # NprintMeasures()
 #
@@ -174,10 +174,6 @@ NcalcConfusion<-function(expectedClass,predictedClass){
 #           string - title   - title of the table
 #
 # OUTPUT :  NONE
-#
-# 070819NRT updated to output table to viewer only
-# 171019NRT added column name "Metric"
-# 241019NRT added title
 # ************************************************
 NprintMeasures<-function(results,title){
   
@@ -195,9 +191,9 @@ NprintMeasures<-function(results,title){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
-# DECISION TREE CONVERT DT RULES TO ASCII FORMATTED RULES
+# Convert DT rules to ASCII rules
 #
 # <anticedent 1> AND <anticedent 2> ...
 # Each anticedent is: [field][comparision][value]
@@ -207,7 +203,6 @@ NprintMeasures<-function(results,title){
 # OUTPUT: data frame of rules, class and anticedents
 # ************************************************
 NDT5RuleOutput<-function(tree){
-  #library(stringr)
   x<-summary(tree)[1]
   x<-substr(x,regexpr("Rules:",x)[1]+8,nchar(x))
   x<-substr(x,1,regexpr("Evaluation on training data",x)[1]-1)
@@ -216,10 +211,9 @@ NDT5RuleOutput<-function(tree){
   df_of_rules<-setNames(df_of_rules,c("Rule","Class","Anti"))
   
   numberofrules<-tree$size
-  # 271019 allow for multiple trees (i.e. boosted)
   if (length(numberofrules)>1){
     numberofrules<-numberofrules[1]
-    warning("Prof Nick says: More than one tree found. Extracting rules for just the first")
+    warning("More than one tree found. Extracting rules for just the first")
   }
   
   totalAnticedents<-0
@@ -228,13 +222,12 @@ NDT5RuleOutput<-function(tree){
     end<-regexpr("->",x)[1]-3
     onerule<-substr(x,start,end) #Single rule, anticedents seperated by '**'
     onerule<-gsub("\\*\\*"," AND ",onerule) #Rule now has "AND" between anticedents
-    #onerule<-convertNormalisedDTRuleToRealWorld(onerule)
     NumAnticedents<-str_count(onerule,"AND")+1
     totalAnticedents=totalAnticedents+NumAnticedents
     classpos<-regexpr("class ",x)+6
     classID<-as.numeric(substr(x,classpos,classpos))  #This has the class of the rule, i.e. {0,1}
     df_of_rules$Rule[ruleNumber]<-onerule
-    df_of_rules$Class[ruleNumber]<-ifelse(classID==0,"FLOP","HIT") # Convert class to label
+    df_of_rules$Class[ruleNumber]<-ifelse(classID==0,"Failure","Success") # Convert class to label
     df_of_rules$Anti[ruleNumber]<-NumAnticedents
     x<-substr(x,classpos,nchar(x))
     st<-regexpr("\\*\\*",x)[1]+2 #move past the rule ID
@@ -245,12 +238,11 @@ NDT5RuleOutput<-function(tree){
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # NEvaluateClassifier() :
 #
-# Use dataset to generate predictions from model
-# Evaluate as classifier using threshold value
+# Evaluate classifier using threshold value
 #
 # INPUT   :   vector double     - probs        - probability of being class 1
 #             Data Frame        - testing_data - Dataset to evaluate
@@ -268,11 +260,11 @@ NEvaluateClassifier<-function(test_predicted,test_expected,threshold) {
                           predictedClass=predictedClass)
   
   return(results)
-} #endof NEvaluateClassifier()
+}
 
 # ************************************************
 #
-# [This function consists of modified code from Lab 4]
+# [Based on Lab 4's code]
 #
 # NdetermineThreshold() :
 #
@@ -290,9 +282,6 @@ NEvaluateClassifier<-function(test_predicted,test_expected,threshold) {
 #
 # OUTPUT  :   List       - Named evaluation measures
 #                        - Predicted class probability
-#
-# Uses   library(pROC)
-# 241019NRT - added plot flag and title for charts
 # ************************************************
 NdetermineThreshold<-function(test_predicted,
                               test_expected,
@@ -375,8 +364,6 @@ NdetermineThreshold<-function(test_predicted,
          col="black",
          paste("THRESHOLDS:\nDistance=",mindist,"\nYoudan=",maxYoudan))
     
-    # ************************************************
-    # ROC graph using a library
     
     rr<-pROC::roc(response=test_expected,
                   predictor=test_predicted,
@@ -414,8 +401,7 @@ NdetermineThreshold<-function(test_predicted,
     
   } # endof if plotting
   
-  # Select the threshold - I have choosen distance
-  
+  # Euclidean distance threshold
   myThreshold<-mindist      # Min Distance should be the same as analysis["threshold"]
   
   #Use the "best" distance threshold to evaluate classifier
@@ -426,4 +412,4 @@ NdetermineThreshold<-function(test_predicted,
   results$threshold<-myThreshold
   
   return(results)
-} #endof NdetermineThreshold()
+}
