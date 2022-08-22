@@ -123,9 +123,9 @@ initialPreprocessing<-function(config){
 }
 
 # ************************************************
-# preprocessDataset() :
+# preprocessing() :
 #
-# Perform preprocessing on entire dataset
+# Perform preprocessing and handle outliers
 #
 # INPUT: data frame - df     - data frame of movies
 #        list       - config - list of configurations

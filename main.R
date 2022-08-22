@@ -152,10 +152,10 @@ main<-function(){
   # Visualize data
   visualizeData(movies, config)
   
-  # Dataset after entire dataset has been preprocessed
-  datasets <- preprocessing(movies, config)
-  movies <- datasets$movies
-  movies_normalized <- datasets$movies_normalized
+  # Df after preprocessing
+  df <- preprocessing(movies, config)
+  movies <- df$movies
+  movies_normalized <- df$movies_normalized
 
   # Prepare the dataset for use in stratified k-fold cross-validation
   dataset <- stratifiedDataset(movies)
